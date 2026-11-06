@@ -153,7 +153,7 @@ within the harness timeout (60 s), and every webhook must be delivered by then.
 | Dropped-response faults via an HTTP proxy, crashes via SIGKILL failpoints | Same code runs in prod and chaos; proxies test the real client | Mocks: wouldn't test real socket behaviour |
 | Compose runs Postgres only; services run on the host | The harness has to SIGKILL and restart them quickly; containers would slow every kill and add nothing | Containerizing each service |
 | A reversed auth answers 402, not 504 | The outcome is final, and clients treat any 5xx as safe to retry. Found by the harness: its client retried forever | 504: looks natural, breaks every retry loop |
-| Settlement cutoff taken from the network database's clock | `applied_at` comes from that clock; the app's clock put just-applied captures outside their own file | App clock |
+| A timestamp is judged by the clock that stamped it (settlement cutoff, auth expiry, auth deadline) | App and database clocks disagree: by milliseconds normally, by more after a VM has been paused. All three broke under the app's clock | Comparing in app code |
 | Chaos checks read all four databases directly; services never do | An oracle sharing the services' view would share their blind spots | Checking through the APIs |
 | Merchant secrets stored plaintext, generated per merchant | Simulator with fake merchants, nothing real to protect. Production would use a KMS | — |
 

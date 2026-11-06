@@ -253,7 +253,9 @@ export function buildApi(ctx: Ctx, opts: { syncWaitMs?: number } = {}) {
     async (req, reply) => {
       const key = idempotencyKey(req.headers);
       const admission = await command(req.params.id, key, req.body, "capture", async (c, p) => {
-        if (p.expires_at.getTime() <= Date.now()) {
+        // The database's clock set expires_at, so it decides. An app clock that has drifted from it would misjudge this.
+        const { rows: clock } = await c.query<{ expired: boolean }>("select expires_at <= now() as expired from payments where id = $1", [p.id]);
+        if (clock[0].expired) {
           return { status: 422, body: { error: "authorization_expired", message: "this authorization has expired", payment: paymentJson(p) } };
         }
         const left = remaining(p);

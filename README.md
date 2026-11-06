@@ -129,6 +129,7 @@ shifted two days running: reconciliation correctly didn't re-report an exception
 
 ## Not verified
 
+- **The chaos and load results predate the last fix,** which made the database clock judge auth expiry and the auth deadline. Tests passed on that fix in 4 of 6 runs while the laptop was sleeping; the other 2 were 60 s timeouts. The short chaos profile on it didn't finish: a client gave up after 90 s of wall-clock time on a refund that had made one attempt, most likely because the Docker VM was paused by host sleep, though that isn't proven. Rerun `npm test` and `npm run chaos` on an awake machine.
 - **CI has never run.** The workflow is written, but nothing has been pushed. It also assumes `flashyash/ledger` is readable from Actions.
 - **Load numbers come from one busy laptop,** with another CPU-heavy job running, and are not a capacity claim. See above for the clean rerun.
 
@@ -139,6 +140,7 @@ _Drafted by Claude from what happened during the build. Yash: replace this with 
 - **The chaos harness needed its own test.** A run with zero violations means nothing until sabotage runs prove the checker can see violations.
 - **Bugs found on the way:** an app-clock cutoff left just-applied captures out of their own settlement file (the fix uses the database's clock); a final outcome returned as `504` made well-behaved clients
   retry forever (now `402`); one dropped read failed an entire reconciliation file (now retried, and unknown is never reported as a mismatch).
+- **Two clocks caused real bugs, twice.** Comparing database timestamps with the app's clock broke settlement cutoffs, then auth expiry and the auth deadline. Those two only showed up when the laptop sleeping made the Docker VM's clock drift. The database's clock now judges everything it stamped.
 - **The first explanation of a slow run is usually wrong.** Commit fsync looked like the throughput limit, and a run with it off showed it wasn't. Stalls first looked like overlapping jobs, then a slow disk, and the power log showed the
   laptop going to sleep. Load tests now record pauses so a bad run gets labelled by evidence.
 - **Tight timeouts made tests flaky under load.** Deadline tests now move the deadline in the database instead of waiting on a clock.

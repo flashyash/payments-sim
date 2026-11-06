@@ -33,6 +33,7 @@ export interface Op {
   network_at: Date | null;
   attempts: number;
   deadline_at: Date | null;
+  deadline_passed: boolean; // computed by the database: its clock set deadline_at, so its clock judges it
   result: { status: number; body: unknown } | null;
 }
 
@@ -278,7 +279,7 @@ const authorize: Record<string, Step> = {
       reply = await ctx.network.auth({ ref: p.auth_ref, merchantId: p.merchant_id, cardToken: p.card_token, amount: p.amount_authorized.toString() });
     } catch (err) {
       if (!(err instanceof Unknown)) throw err;
-      if (op.deadline_at && Date.now() > op.deadline_at.getTime()) return setStep(ctx, op, lease, "reverse");
+      if (op.deadline_passed) return setStep(ctx, op, lease, "reverse");
       throw new Retry(err.message);
     }
     failpoint("authorize.network.after");
@@ -678,7 +679,7 @@ async function claim(ctx: Ctx, opId: string): Promise<Lease | null> {
 }
 
 export async function loadOp(ctx: Pick<Ctx, "pool">, opId: string): Promise<Op> {
-  const { rows } = await ctx.pool.query<Op>("select * from operations where id = $1", [opId]);
+  const { rows } = await ctx.pool.query<Op>("select *, coalesce(deadline_at < now(), false) as deadline_passed from operations where id = $1", [opId]);
   return rows[0];
 }
 
