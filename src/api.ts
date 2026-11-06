@@ -4,6 +4,7 @@ import { tx, type Client } from "./db.ts";
 import { processNotification, receiveNotification } from "./inbox.ts";
 import { drive, loadOp, paymentJson, refundable, remaining, type Ctx, type Op, type Payment } from "./engine.ts";
 import { failpoint } from "./failpoints.ts";
+import { reconcileFile } from "./recon.ts";
 import { canAdmit, type Command } from "./stateMachine.ts";
 
 const AMOUNT = { type: "string", pattern: "^[1-9][0-9]{0,17}$" } as const;
@@ -329,6 +330,12 @@ export function buildApi(ctx: Ctx, opts: { syncWaitMs?: number } = {}) {
       return reply.status(200).send({ ok: true });
     },
   );
+
+  // Simulated "daily" run. The harness calls it with each new file; replays are no-ops.
+  app.post<{ Params: { fileId: string } }>("/admin/reconcile/:fileId", async (req) => {
+    const report = await reconcileFile(ctx, req.params.fileId);
+    return { ...report, exceptions: report.exceptions.map((e) => ({ ref: e.ref, type: e.type })) };
+  });
 
   app.get<{ Params: { id: string } }>("/v1/payments/:id", { schema: { params: uuidParams } }, async (req) => {
     const { rows } = await ctx.pool.query<Payment>("select * from payments where id = $1", [req.params.id]);

@@ -654,6 +654,8 @@ const reserveTopup: Record<string, Step> = {
 // --- The driver ------------------------------------------------------------------------------------------------
 
 export const FLOWS: Record<string, Record<string, Step>> = {
+  // settlement registers itself from recon.ts
+
   authorize,
   capture,
   void: voidSteps("void", "void"),

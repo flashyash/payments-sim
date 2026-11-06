@@ -82,7 +82,7 @@ const paramsHash = (o: unknown) => createHash("sha256").update(JSON.stringify(o)
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function openingBalance(token: string): bigint {
+export function openingBalance(token: string): bigint {
   if (token.startsWith("tok_nsf")) return 0n;
   const low = /^tok_low_(\d+)/.exec(token);
   if (low) return BigInt(low[1]);
@@ -397,10 +397,13 @@ export function buildNetwork(opts: NetworkOptions) {
 
   // Builds the day's settlement file, with deliberately injected mismatches recorded in a manifest.
   app.post<{ Body: { cutoff?: string; inject?: Injections } }>("/admin/settlement-files", async (req, reply) => {
-    const cutoff = req.body.cutoff ? new Date(req.body.cutoff) : new Date();
     const inject = req.body.inject ?? {};
     const file = await tx(pool, async (c) => {
       await c.query("select pg_advisory_xact_lock(hashtext('settlement'))");
+      // The database's clock, the same one that stamped applied_at. App and database clocks disagree by milliseconds,
+      // which is enough to leave a just-applied capture out of its own file.
+      const clock = await c.query<{ now: Date }>("select clock_timestamp() as now");
+      const cutoff = req.body.cutoff ? new Date(req.body.cutoff) : clock.rows[0].now;
       const { rows } = await c.query<{ ref: string; type: string; merchant_id: string; amount: bigint }>(
         `select ref, type, merchant_id, amount from messages
           where settlement_file_id is null and status = 'approved' and applied_at <= $1 and type = any($2)
