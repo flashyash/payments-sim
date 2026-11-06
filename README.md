@@ -114,7 +114,7 @@ The client scaling table below is from an earlier set of runs, before the query 
 
 What these show:
 - A full flow (authorize + capture) costs about **41 database commits** across the four databases, webhooks included.
-- Throughput tops out around **90–120 flows/s** (about 180–250 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
+- Throughput tops out around **90–140 flows/s** (about 180–280 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
 - Sharding helped less than expected in throughput, but with 1 shard capture p99 was roughly 2× worse.
 - **The ceiling at this setup is the laptop's Docker path, not the payment code.** Each limit below only showed up after removing the one above it (single 15 s runs, 20 clients; raw files in [results/profiling](results/profiling)):
   1. **Docker VM CPU, at 2 vCPUs.** The VM was 3–4% idle. Postgres used about 100 of its 200%, while sshd, docker-proxy and softirq together used about 110. Close to half the VM goes on moving bytes. A flow makes about 114 client round trips, and each statement took about 1.7 ms from the client against about 0.11 ms of Postgres execution.
