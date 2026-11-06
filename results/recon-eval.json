@@ -1,39 +1,39 @@
 {
   "days": 5,
-  "linesInFiles": 1008,
-  "matched": 960,
-  "injected": 58,
-  "truePositives": 58,
+  "linesInFiles": 1007,
+  "matched": 951,
+  "injected": 68,
+  "truePositives": 68,
   "falsePositives": 0,
   "falseNegatives": 0,
   "alreadyCoveredByOpenException": 0,
   "precision": 1,
   "recall": 1,
-  "shiftsResolvedNextDay": 7,
+  "shiftsResolvedNextDay": 10,
   "byKind": {
     "drop": {
       "injected": 10,
       "detected": 10
     },
     "shift": {
-      "injected": 10,
-      "detected": 10
+      "injected": 13,
+      "detected": 13
     },
     "alterAmount": {
-      "injected": 8,
-      "detected": 8
+      "injected": 12,
+      "detected": 12
     },
     "alterFee": {
-      "injected": 9,
-      "detected": 9
+      "injected": 13,
+      "detected": 13
     },
     "duplicate": {
-      "injected": 10,
-      "detected": 10
-    },
-    "phantom": {
       "injected": 11,
       "detected": 11
+    },
+    "phantom": {
+      "injected": 9,
+      "detected": 9
     }
   }
 }

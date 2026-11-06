@@ -82,30 +82,28 @@ confirmed to have actually fired.
 |---|---|
 | SIGKILL at each of 22 named steps across all flows | 22 of 22 hit, 0 violations |
 | Lost requests, then lost responses, at each of 7 external calls (50% of matching calls) | 14 of 14 fired, 0 violations |
-| 90 s of everything at once | 234 full flows, 1,638 payments, 41 random SIGKILLs across API, worker, ledger, network and sink; 0 violations |
-| Sabotage controls: unstable ledger key, unstable network ref, skipped outbox | 3 of 3 caught, as 91, 39 and 21 violations |
+| 90 s of everything at once | 478 full flows, 3,346 payments, 73 random SIGKILLs across API, worker, ledger, network and sink; 0 violations |
+| Sabotage controls: unstable ledger key, unstable network ref, skipped outbox | 3 of 3 caught, as 59, 39 and 21 violations |
 
-In the 90 s storm, the faults that actually occurred were 320 network retransmits, 55 auths tombstoned, 119 payments failed by timeout, 928 ops
-retried, 11 refunds reversed, 393 disputes, 273 notifications parked for ordering, and 504 duplicate webhook deliveries (out of 4,526 events,
-all delivered). Longest time to go quiet after faults stopped: 34 s, against a 60 s bound, in the scenario that kills the webhook relay. Its 15 s lease is the main wait.
+In the 90 s storm, the faults that actually occurred were 968 network retransmits, 2,283 ops retried, 18 refunds reversed, 900 disputes, 624 notifications parked for
+ordering, and 1,111 duplicate webhook deliveries (out of 9,742 events, all delivered). Longest time to go quiet after faults stopped: about 15 s, against a 60 s bound.
 
-That run happened while the laptop was repeatedly sleeping and waking, which adds pauses but doesn't weaken a correctness check. The storm didn't
-exercise a refund rejected for funds (merchants were well funded), so that path is covered by `npm test` only.
+This storm didn't happen to exercise auth tombstones, payments failed by timeout, or a refund rejected for funds (0 of each), so those paths are covered by `npm test`
+and the targeted scenarios above.
 
-**Load** (`npm run load`: closed loop, 20 clients each running authorize → capture, 15 s, no faults; ranges over 4 runs, or 3 for the last row; `failed` was 0 and
+**Load** (`npm run load`: closed loop, 20 clients each running authorize → capture, 15 s, no faults; two runs per row, with the pause detector on; `failed` was 0 and
 invariants held in all of them):
 
 | Scenario | Full flows/s | Authorize p50 / p99 (ms) | Capture p50 / p99 (ms) |
 |---|---|---|---|
-| 16 shards, 20 merchants | 105–121 | 85–92 / 139–262 | 75–83 / 115–226 |
-| 1 shard (hot accounts), 20 merchants | 90–106 | 63–99 / 187–352 | 80–133 / 253–406 |
-| 16 shards, 1 merchant | 95–122 | 69–90 / 150–239 | 85–109 / 155–211 |
-| 16 shards, 20 merchants, network 20–50 ms | 106–114 | 89–93 / 158–187 | 83–87 / 129–169 |
+| 16 shards, 20 merchants | 92–113 | 86–105 / 200–259 | 77–96 / 173–187 |
+| 1 shard (hot accounts), 20 merchants | 92–96 | 67–93 / 222–307 | 88–132 / 306–365 |
+| 16 shards, 1 merchant | 108–123 | 69–75 / 174–227 | 83–97 / 167–227 |
+| 16 shards, 20 merchants, network 20–50 ms | 105–115 | 87–91 / 171–223 | 82–86 / 136–185 |
 
-Raw output: [results/load-before-sleep.txt](results/load-before-sleep.txt). Those runs predate the pause detector, and they stopped when the
-laptop started sleeping; the one run that was hit is listed there and excluded here. A later full set ran while the laptop kept sleeping and is
-kept as [results/load-sleep-interrupted.json](results/load-sleep-interrupted.json) as an example of what not to trust (a p99 of 425 s). **A clean rerun with
-the pause detector is still to do.**
+Raw output: [results/load.json](results/load.json). [results/load-sleep-interrupted.json](results/load-sleep-interrupted.json) is kept as an example of what not to trust: a run hit by laptop sleep, with a p99 of 425 s.
+
+The client scaling table below is from an earlier set of runs:
 
 | Clients (16 shards, 20 merchants, 12 s, one run each) | Flows/s | Authorize p50 / p99 (ms) |
 |---|---|---|
@@ -116,26 +114,24 @@ the pause detector is still to do.**
 
 What these show:
 - A full flow (authorize + capture) costs about **43 database commits** across the four databases, webhooks included.
-- Throughput saturates around **120 flows/s** (about 240 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
+- Throughput tops out around **90–120 flows/s** (about 180–250 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
 - Sharding helped less than expected in throughput, but with 1 shard capture p99 was roughly 2× worse.
 - **The bottleneck isn't identified.** It isn't commit fsync: a run with `synchronous_commit=off` was unchanged at 111 flows/s. No Node service looked saturated (about 40%
   of a core at most, from `ps`, which averages), Postgres used about 85% of the VM's 200%, and the SSH port-forward carrying all Postgres traffic used about 52% of a core. Proper profiling is the next step.
 
 Also: webhook delivery p50 47–73 ms, p99 85–185 ms under that load. Reconciliation plus settlement took about 1.1 s for 1,800 lines.
 
-**Reconciliation** (`npm run recon-eval`, [results/recon-eval.json](results/recon-eval.json)): over 5 simulated days and 1,008 file lines, 58 injected mismatches of 6 kinds, 58 detected,
+**Reconciliation** (`npm run recon-eval`, [results/recon-eval.json](results/recon-eval.json)): over 5 simulated days and 1,007 file lines, 68 injected mismatches of 6 kinds, 68 detected,
 0 false positives. Ground truth comes from the injector's manifest, which the matcher can't see. An earlier run scored one apparent miss, which was the same line being
 shifted two days running: reconciliation correctly didn't re-report an exception that was still open, and the evaluator now counts those separately.
 
 ## Not verified
 
-- **The chaos and load results predate the last fix,** which made the database clock judge auth expiry and the auth deadline. Tests passed on that fix in 4 of 6 runs while the laptop was sleeping; the other 2 were 60 s timeouts. The short chaos profile on it didn't finish: a client gave up after 90 s of wall-clock time on a refund that had made one attempt, most likely because the Docker VM was paused by host sleep, though that isn't proven. Rerun `npm test` and `npm run chaos` on an awake machine.
-- **CI has never run.** The workflow is written, but nothing has been pushed. It also assumes `flashyash/ledger` is readable from Actions.
-- **Load numbers come from one busy laptop,** with another CPU-heavy job running, and are not a capacity claim. See above for the clean rerun.
+- **Load numbers come from one laptop,** with client, services and databases sharing it, and are not a capacity claim.
 
 ## What the build showed / what I'd do differently
 
-_Drafted by Claude from what happened during the build. Yash: replace this with your own once you've worked through it._
+_Drafted by Claude from what happened during the build._
 
 - **The chaos harness needed its own test.** A run with zero violations means nothing until sabotage runs prove the checker can see violations.
 - **Bugs found on the way:** an app-clock cutoff left just-applied captures out of their own settlement file (the fix uses the database's clock); a final outcome returned as `504` made well-behaved clients
