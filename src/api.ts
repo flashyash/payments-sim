@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyError } from "fastify";
+import { Unknown } from "./clients.ts";
 import { tx, type Client } from "./db.ts";
 import { processNotification, receiveNotification } from "./inbox.ts";
 import { drive, loadOp, paymentJson, refundable, remaining, type Ctx, type Op, type Payment } from "./engine.ts";
@@ -61,7 +62,9 @@ async function admit(
   });
 }
 
-const requestHash = (route: string, body: unknown) => createHash("sha256").update(route + JSON.stringify(body)).digest("hex");
+// Request bodies are flat, so sorting top-level keys is enough for a retry with reordered fields to hash the same.
+const requestHash = (route: string, body: unknown) =>
+  createHash("sha256").update(route + JSON.stringify(body, Object.keys(body as object).sort())).digest("hex");
 
 export async function createOp(
   c: Client,
@@ -107,6 +110,7 @@ export function buildApi(ctx: Ctx, opts: { syncWaitMs?: number } = {}) {
 
   app.setErrorHandler((err: FastifyError | HttpError, _req, reply) => {
     if (err instanceof HttpError) return reply.status(err.status).send({ error: err.code, message: err.message });
+    if (err instanceof Unknown) return reply.status(503).send({ error: "dependency_unavailable", message: "retry" });
     const e = err as FastifyError & { constraint?: string };
     if (e.validation) return reply.status(400).send({ error: "validation_error", message: e.message });
     if (e.constraint === "operations_one_active") {

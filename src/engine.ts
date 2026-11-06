@@ -296,7 +296,8 @@ const authorize: Record<string, Step> = {
       ctx.network.void({ ref: `rev:${op.id}`, authRef: p.auth_ref, merchantId: p.merchant_id, amount: p.amount_authorized.toString() }),
     );
     failpoint("authorize.reverse.after");
-    await finish(ctx, op, lease, { state: "failed", error: "network_timeout", httpStatus: 504 }, async (c, pay) => {
+    // 402, not 504: this outcome is final, and a merchant's client treats any 5xx as "safe to retry".
+    await finish(ctx, op, lease, { state: "failed", error: "network_timeout", httpStatus: 402 }, async (c, pay) => {
       pay.status = transition(pay.status, "fail");
       await savePayment(c, pay);
       await emit(c, pay, "payment.failed", { reason: "network_timeout" });

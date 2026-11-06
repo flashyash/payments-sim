@@ -1,0 +1,37 @@
+{
+  "profile": "full",
+  "durationSeconds": 25,
+  "scenarios": 3,
+  "scenariosWithViolations": 0,
+  "scenariosNotExercised": [],
+  "maxQuiesceMs": 0,
+  "results": [
+    {
+      "name": "sabotage unstable_ledger_key caught as postings_exact",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 46
+      }
+    },
+    {
+      "name": "sabotage unstable_network_ref caught as nothing_captured_twice",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 44
+      }
+    },
+    {
+      "name": "sabotage skip_outbox caught as webhooks_delivered",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 21
+      }
+    }
+  ]
+}

@@ -186,5 +186,5 @@ payments-sim works against the ledger as it stands at `a704449`. These would eac
 - [x] M3 Refunds, chargebacks, out-of-order inbox (core)
 - [x] M4 Transactional outbox, signed webhooks (plumbing + core)
 - [x] M5 Settlement + reconciliation with injected mismatches (core)
-- [ ] M6 Chaos harness + invariant checker + sabotage control
+- [x] M6 Chaos harness + invariant checker + sabotage control
 - [ ] M7 Load test, README numbers, SKILLS row, bullets

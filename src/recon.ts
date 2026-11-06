@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createOp } from "./api.ts";
 import { accountNames } from "./chart.ts";
+import { Unknown } from "./clients.ts";
 import { tx, type Client } from "./db.ts";
 import {
   chartId,
@@ -100,11 +101,24 @@ function expectedEntry(item: Item): { name: string; amount: bigint } {
   }
 }
 
+// A file has thousands of lines, so one dropped read mustn't fail the run. An unanswered read is retried, and if it stays
+// unanswered the whole run fails and is retried later. It's never reported as a mismatch: unknown isn't "disagrees".
+async function withRetry<T>(fn: () => Promise<T>, attempts = 8): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!(err instanceof Unknown) || i >= attempts) throw err;
+      await new Promise((r) => setTimeout(r, 25 * 2 ** i));
+    }
+  }
+}
+
 async function ledgerAgrees(ctx: Ctx, item: Item): Promise<boolean> {
-  const txn = await ctx.ledger.transaction(item.ledger_txn_id);
+  const txn = await withRetry(() => ctx.ledger.transaction(item.ledger_txn_id));
   if (!txn) return false;
   const expected = expectedEntry(item);
-  const account = await ctx.chart.id(expected.name);
+  const account = await withRetry(() => ctx.chart.id(expected.name));
   return txn.entries.some((e) => e.accountId === account && BigInt(e.amount) === expected.amount);
 }
 
