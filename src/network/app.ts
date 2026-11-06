@@ -100,7 +100,7 @@ export function buildNetwork(opts: NetworkOptions) {
   const faults: Faults = { ...NO_FAULTS, ...opts.faults };
   const feeBps = opts.feeBps ?? 200;
   const rng = mulberry32(opts.seed ?? Date.now() & 0xffffffff);
-  const processorUrl = opts.processorUrl;
+  let processorUrl = opts.processorUrl;
   const app = Fastify({ logger: false });
   const lateTimers = new Set<NodeJS.Timeout>();
 
@@ -524,5 +524,13 @@ export function buildNetwork(opts: NetworkOptions) {
     for (const t of lateTimers) clearTimeout(t);
   });
 
-  return { app, faults, dispatchOnce, startDispatcher };
+  return {
+    app,
+    faults,
+    dispatchOnce,
+    startDispatcher,
+    setProcessorUrl: (url: string) => {
+      processorUrl = url;
+    },
+  };
 }

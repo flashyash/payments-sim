@@ -1,7 +1,8 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyError } from "fastify";
 import { tx, type Client } from "./db.ts";
-import { drive, loadOp, paymentJson, remaining, type Ctx, type Op, type Payment } from "./engine.ts";
+import { processNotification, receiveNotification } from "./inbox.ts";
+import { drive, loadOp, paymentJson, refundable, remaining, type Ctx, type Op, type Payment } from "./engine.ts";
 import { failpoint } from "./failpoints.ts";
 import { canAdmit, type Command } from "./stateMachine.ts";
 
@@ -63,12 +64,24 @@ const requestHash = (route: string, body: unknown) => createHash("sha256").updat
 
 export async function createOp(
   c: Client,
-  o: { paymentId: string | null; merchantId: string; kind: string; step: string; amount?: bigint; finalCapture?: boolean; deadlineMs?: number; networkRef?: boolean; disputeId?: string; graceless?: boolean },
+  o: {
+    paymentId: string | null;
+    merchantId: string;
+    kind: string;
+    step: string;
+    amount?: bigint;
+    finalCapture?: boolean;
+    deadlineMs?: number;
+    networkRef?: boolean | string; // false = none, a string = the network's own ref (chargebacks)
+    networkAt?: string;
+    disputeId?: string;
+    graceless?: boolean;
+  },
 ): Promise<string> {
   const id = randomUUID();
   await c.query(
-    `insert into operations (id, payment_id, merchant_id, kind, step, state, amount, final_capture, network_ref, deadline_at, dispute_id, next_attempt_at)
-     values ($1,$2,$3,$4,$5,'in_progress',$6,$7,$8, now() + ($9 || ' milliseconds')::interval, $10, now() + ($11)::interval)`,
+    `insert into operations (id, payment_id, merchant_id, kind, step, state, amount, final_capture, network_ref, deadline_at, dispute_id, next_attempt_at, network_at)
+     values ($1,$2,$3,$4,$5,'in_progress',$6,$7,$8, now() + ($9 || ' milliseconds')::interval, $10, now() + ($11)::interval, $12)`,
     [
       id,
       o.paymentId,
@@ -77,10 +90,11 @@ export async function createOp(
       o.step,
       o.amount?.toString() ?? null,
       o.finalCapture ?? false,
-      o.networkRef === false ? null : `${o.kind}:${id}`,
+      o.networkRef === false ? null : typeof o.networkRef === "string" ? o.networkRef : `${o.kind}:${id}`,
       o.deadlineMs ?? null,
       o.disputeId ?? null,
       o.graceless ? "0 seconds" : NEW_OP_GRACE,
+      o.networkAt ?? null,
     ],
   );
   return id;
@@ -263,6 +277,56 @@ export function buildApi(ctx: Ctx, opts: { syncWaitMs?: number } = {}) {
         createOp(c, { paymentId: p.id, merchantId: p.merchant_id, kind: "void", step: "network" }),
       );
       return respond(reply, admission);
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { amount?: string } }>(
+    "/v1/payments/:id/refund",
+    {
+      schema: { params: uuidParams, body: { type: "object", additionalProperties: false, properties: { amount: AMOUNT } } },
+      preValidation: async (req) => {
+        req.body ??= {};
+      },
+    },
+    async (req, reply) => {
+      const key = idempotencyKey(req.headers);
+      const admission = await command(req.params.id, key, req.body, "refund", async (c, p) => {
+        const left = refundable(p);
+        const amount = req.body.amount ? BigInt(req.body.amount) : left;
+        if (amount <= 0n || amount > left) {
+          return { status: 422, body: { error: "amount_exceeds_refundable", message: `only ${left} is refundable`, payment: paymentJson(p) } };
+        }
+        await c.query("update payments set reserved_refund = reserved_refund + $2 where id = $1", [p.id, amount.toString()]);
+        return createOp(c, { paymentId: p.id, merchantId: p.merchant_id, kind: "refund", step: "post", amount });
+      });
+      return respond(reply, admission);
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { amount: string } }>(
+    "/v1/merchants/:id/reserve",
+    { schema: { body: { type: "object", required: ["amount"], additionalProperties: false, properties: { amount: AMOUNT } } } },
+    async (req, reply) => {
+      const key = idempotencyKey(req.headers);
+      const merchantId = req.params.id;
+      const admission = await admit(ctx, merchantId, key, requestHash("reserve", req.body), async (c) => {
+        const known = await c.query("select 1 from merchants where id = $1", [merchantId]);
+        if (!known.rowCount) throw new HttpError(404, "merchant_not_found", `merchant ${merchantId} not found`);
+        return createOp(c, { paymentId: null, merchantId, kind: "reserve_topup", step: "post", amount: BigInt(req.body.amount), networkRef: false });
+      });
+      return respond(reply, admission);
+    },
+  );
+
+  // The network's channel to us. Store first, answer 200, process later: at-least-once and unordered on their side,
+  // deduped and resequenced on ours.
+  app.post<{ Body: { messageId: string; type: string; payload: Record<string, unknown> } }>(
+    "/network/notifications",
+    async (req, reply) => {
+      await receiveNotification(ctx, req.body);
+      failpoint("inbox.received");
+      await processNotification(ctx, req.body.messageId).catch(() => {}); // the worker picks it up if this fails
+      return reply.status(200).send({ ok: true });
     },
   );
 

@@ -54,7 +54,7 @@ create table operations (
   payment_id      uuid references payments(id),
   merchant_id     text not null,
   kind            text not null check (kind in
-    ('authorize','capture','void','expire','refund','chargeback_open','chargeback_won','settlement')),
+    ('authorize','capture','void','expire','refund','chargeback_open','chargeback_won','settlement','reserve_topup')),
   amount          bigint,
   final_capture   boolean not null default false,
   dispute_id      uuid,

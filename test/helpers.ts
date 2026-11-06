@@ -50,6 +50,7 @@ export async function startStack(cfgOver: Partial<ProcessorConfig> = {}, netFaul
   const ctx = buildContext(cfg, pool);
   const api = buildApi(ctx, { syncWaitMs: 2000 });
   const apiUrl = await api.listen({ port: 0, host: "127.0.0.1" });
+  net.setProcessorUrl(apiUrl);
   const merchant = `m_${randomUUID().slice(0, 8)}`;
   const res = await fetch(`${apiUrl}/v1/merchants`, {
     method: "POST",
@@ -133,6 +134,28 @@ export async function shardedBalance(s: Stack, prefix: string): Promise<bigint> 
 export async function holdBalance(s: Stack, paymentId: string): Promise<bigint> {
   const { rows } = await s.ctx.pool.query<{ hold_account_id: string }>("select hold_account_id from payments where id = $1", [paymentId]);
   return s.ctx.ledger.balance(rows[0].hold_account_id);
+}
+
+// Pushes notifications through the real HTTP path, then waits for ops, inbox and network queue to be empty.
+export async function drain(s: Stack, opts: { timeoutMs?: number } = {}): Promise<void> {
+  const deadline = Date.now() + (opts.timeoutMs ?? 20_000);
+  for (;;) {
+    await s.net.dispatchOnce();
+    await tick(s.ctx);
+    const ops = await s.ctx.pool.query<{ n: number }>(
+      `select (select count(*) from operations where state = 'in_progress')::int
+            + (select count(*) from network_inbox where state = 'pending')::int as n`,
+    );
+    const net = await s.netPool.query<{ n: number }>("select count(*)::int as n from notifications where delivered_at is null");
+    if (ops.rows[0].n === 0 && net.rows[0].n === 0) return;
+    if (Date.now() > deadline) throw new Error(`not drained: ${ops.rows[0].n} local, ${net.rows[0].n} at network`);
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+export async function fundMerchant(s: Stack, amount: string): Promise<void> {
+  const r = await client(s).call("POST", `/v1/merchants/${s.merchant}/reserve`, { amount });
+  if (r.status !== 201) throw new Error(`top-up failed: ${r.status}`);
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

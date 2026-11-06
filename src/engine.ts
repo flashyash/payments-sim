@@ -73,7 +73,7 @@ export function paymentJson(p: Payment) {
 }
 
 // Thrown when a step needs another attempt later (network or ledger didn't give an answer).
-class Retry extends Error {
+export class Retry extends Error {
   name = "Retry";
 }
 // Thrown when our fencing token is stale: someone else owns this op now, stop touching it.
@@ -81,13 +81,13 @@ class Fenced extends Error {
   name = "Fenced";
 }
 
-interface Lease {
+export interface Lease {
   token: bigint;
 }
 
-type Step = (ctx: Ctx, op: Op, lease: Lease) => Promise<void>;
+export type Step = (ctx: Ctx, op: Op, lease: Lease) => Promise<void>;
 
-async function fence(c: Client, opId: string, lease: Lease): Promise<void> {
+export async function fence(c: Client, opId: string, lease: Lease): Promise<void> {
   // Row lock + token check: if this passes, nobody else can take over until we commit.
   const { rowCount } = await c.query("select 1 from operations where id = $1 and lease_token = $2 for update", [
     opId,
@@ -168,7 +168,7 @@ export async function savePayment(c: Client, p: Payment): Promise<void> {
 }
 
 // An op whose books disagree with a fact we've already acted on. A human has to look. Never guess.
-async function stick(ctx: Ctx, op: Op, lease: Lease, why: string): Promise<void> {
+export async function stick(ctx: Ctx, op: Op, lease: Lease, why: string): Promise<void> {
   await tx(ctx.pool, async (c) => {
     await fence(c, op.id, lease);
     await c.query("update operations set state = 'stuck', error_code = $2, lease_until = null, finished_at = now() where id = $1", [
@@ -209,7 +209,7 @@ export async function preparePosting(
   );
 }
 
-async function sendPosting(ctx: Ctx, op: Op, purpose: string): Promise<PostOutcome> {
+export async function sendPosting(ctx: Ctx, op: Op, purpose: string): Promise<PostOutcome> {
   const key = postingKey(op.id, purpose);
   const { rows } = await ctx.pool.query<{ state: string; body: { entries: []; description: string }; ledger_txn_id: string; rejection: string }>(
     "select state, body, ledger_txn_id, rejection from ledger_postings where key = $1",
@@ -226,7 +226,7 @@ async function sendPosting(ctx: Ctx, op: Op, purpose: string): Promise<PostOutco
   }
 }
 
-async function recordPosting(c: Client, op: Op, purpose: string, outcome: PostOutcome): Promise<void> {
+export async function recordPosting(c: Client, op: Op, purpose: string, outcome: PostOutcome): Promise<void> {
   const key = postingKey(op.id, purpose);
   if (outcome.kind === "posted") {
     await c.query("update ledger_postings set state = 'posted', ledger_txn_id = $2, posted_at = now() where key = $1", [key, outcome.txnId]);
@@ -340,7 +340,7 @@ const authorize: Record<string, Step> = {
   },
 };
 
-async function chartId(ctx: Ctx, name: string): Promise<string> {
+export async function chartId(ctx: Ctx, name: string): Promise<string> {
   try {
     return await ctx.chart.id(name);
   } catch (err) {
@@ -453,6 +453,204 @@ function voidSteps(event: PaymentEvent, label: "void" | "expire"): Record<string
   };
 }
 
+// --- Refund ----------------------------------------------------------------------------------------------------
+
+// The one flow that posts first. It has a real funds check, so if the merchant can't cover it nothing leaves the
+// building. A rejection is recorded and final: this op never re-sends that posting, whatever the merchant's balance
+// does next. That's our answer to the ledger not storing rejected keys.
+const refund: Record<string, Step> = {
+  async post(ctx, op, lease) {
+    const p = await payment(ctx, op.payment_id!);
+    const shard = shardOf(p.id, ctx.cfg.shards);
+    failpoint("refund.post.before");
+    await preparePosting(ctx, op, "refund", async () => ({
+      description: `refund ${p.id}`,
+      entries: [
+        [await chartId(ctx, accountNames.available(p.merchant_id)), -op.amount!],
+        [await chartId(ctx, accountNames.receivable(shard)), op.amount!],
+      ],
+    }));
+    const outcome = await sendPosting(ctx, op, "refund");
+    failpoint("refund.post.after");
+    if (outcome.kind === "rejected") {
+      if (outcome.code !== "insufficient_funds") return stick(ctx, op, lease, `refund rejected: ${outcome.code} ${outcome.message}`);
+      return finish(ctx, op, lease, { state: "failed", error: "insufficient_merchant_funds", httpStatus: 422 }, async (c, pay) => {
+        await recordPosting(c, op, "refund", outcome);
+        pay.reserved_refund -= op.amount!;
+        await savePayment(c, pay);
+        await emit(c, pay, "refund.failed", { reason: "insufficient_merchant_funds", amount: op.amount!.toString() });
+      });
+    }
+    await tx(ctx.pool, async (c) => {
+      await fence(c, op.id, lease);
+      await recordPosting(c, op, "refund", outcome);
+      await c.query("update operations set step = 'network' where id = $1", [op.id]);
+    });
+  },
+
+  async network(ctx, op, lease) {
+    const p = await payment(ctx, op.payment_id!);
+    const reply = await networkCall(() => ctx.network.refund({ ref: sentRef(op), authRef: p.auth_ref, amount: op.amount!.toString() }));
+    failpoint("refund.network.after");
+    if (reply.status !== "approved") return setStep(ctx, op, lease, "reverse_post");
+    const { rows } = await ctx.pool.query<{ ledger_txn_id: string }>("select ledger_txn_id from ledger_postings where key = $1", [postingKey(op.id, "refund")]);
+    await finish(ctx, op, lease, { state: "succeeded", httpStatus: 201 }, async (c, pay) => {
+      const amount = op.amount!;
+      pay.reserved_refund -= amount;
+      pay.amount_refunded += amount;
+      const full = pay.amount_refunded === pay.amount_captured;
+      pay.status = transition(pay.status, full ? "refund_full" : "refund_partial");
+      await savePayment(c, pay);
+      await addSettlementItem(c, {
+        ref: op.network_ref!,
+        type: "refund",
+        merchantId: pay.merchant_id,
+        paymentId: pay.id,
+        amount,
+        shard: shardOf(pay.id, ctx.cfg.shards),
+        ledgerTxn: rows[0].ledger_txn_id,
+        networkAt: reply.appliedAt,
+      });
+      await emit(c, pay, full ? "payment.refunded" : "payment.partially_refunded", { amount: amount.toString() });
+    });
+  },
+
+  // The network refused after we debited the merchant. Undo our posting with the ledger's own reversal.
+  async reverse_post(ctx, op, lease) {
+    const { rows } = await ctx.pool.query<{ ledger_txn_id: string }>("select ledger_txn_id from ledger_postings where key = $1", [postingKey(op.id, "refund")]);
+    const original = rows[0].ledger_txn_id;
+    const key = postingKey(op.id, "refund_reversal");
+    const description = `refund declined, reversing ${original}`;
+    await ctx.pool.query(
+      `insert into ledger_postings (key, operation_id, purpose, body, reverses_txn, state) values ($1,$2,'refund_reversal',$3,$4,'pending') on conflict (key) do nothing`,
+      [key, op.id, JSON.stringify({ description }), original],
+    );
+    let outcome: PostOutcome;
+    try {
+      outcome = await ctx.ledger.reverse(original, key, description);
+    } catch (err) {
+      if (err instanceof Unknown) throw new Retry(err.message);
+      throw err;
+    }
+    failpoint("refund.reverse_post.after");
+    if (outcome.kind === "rejected") return stick(ctx, op, lease, `refund reversal rejected: ${outcome.code} ${outcome.message}`);
+    await finish(ctx, op, lease, { state: "failed", error: "refund_declined", httpStatus: 402 }, async (c, pay) => {
+      await recordPosting(c, op, "refund_reversal", outcome);
+      pay.reserved_refund -= op.amount!;
+      await savePayment(c, pay);
+      await emit(c, pay, "refund.failed", { reason: "network_declined", amount: op.amount!.toString() });
+    });
+  },
+};
+
+// --- Chargebacks -----------------------------------------------------------------------------------------------
+
+// A chargeback is a fact the network imposes, so it can't be rejected. dispute_debt allows negative balances for that
+// reason. It's kept apart from `available` because the overdraft flag is per account: refunds must not overdraw.
+const chargebackOpen: Record<string, Step> = {
+  async post(ctx, op, lease) {
+    const p = await payment(ctx, op.payment_id!);
+    const shard = shardOf(p.id, ctx.cfg.shards);
+    await preparePosting(ctx, op, "chargeback", async () => ({
+      description: `chargeback ${op.dispute_id} on ${p.id}`,
+      entries: [
+        [await chartId(ctx, accountNames.debt(p.merchant_id)), -op.amount!],
+        [await chartId(ctx, accountNames.receivable(shard)), op.amount!],
+      ],
+    }));
+    const outcome = await sendPosting(ctx, op, "chargeback");
+    failpoint("chargeback.post.after");
+    if (outcome.kind === "rejected") return stick(ctx, op, lease, `chargeback rejected: ${outcome.code} ${outcome.message}`);
+    await finish(ctx, op, lease, { state: "succeeded", httpStatus: 200 }, async (c, pay) => {
+      await recordPosting(c, op, "chargeback", outcome);
+      pay.amount_disputed += op.amount!;
+      await savePayment(c, pay);
+      await addSettlementItem(c, {
+        ref: op.network_ref!,
+        type: "chargeback",
+        merchantId: pay.merchant_id,
+        paymentId: pay.id,
+        amount: op.amount!,
+        shard,
+        ledgerTxn: outcome.txnId,
+        networkAt: op.network_at!,
+      });
+      await emit(c, pay, "dispute.opened", { disputeId: op.dispute_id, amount: op.amount!.toString() });
+    });
+  },
+};
+
+const chargebackWon: Record<string, Step> = {
+  async post(ctx, op, lease) {
+    const p = await payment(ctx, op.payment_id!);
+    const shard = shardOf(p.id, ctx.cfg.shards);
+    await preparePosting(ctx, op, "chargeback_won", async () => ({
+      description: `chargeback ${op.dispute_id} won on ${p.id}`,
+      entries: [
+        [await chartId(ctx, accountNames.debt(p.merchant_id)), op.amount!],
+        [await chartId(ctx, accountNames.receivable(shard)), -op.amount!],
+      ],
+    }));
+    const outcome = await sendPosting(ctx, op, "chargeback_won");
+    failpoint("chargeback.post.after");
+    if (outcome.kind === "rejected") return stick(ctx, op, lease, `chargeback reversal rejected: ${outcome.code} ${outcome.message}`);
+    await finish(ctx, op, lease, { state: "succeeded", httpStatus: 200 }, async (c, pay) => {
+      await recordPosting(c, op, "chargeback_won", outcome);
+      pay.amount_disputed -= op.amount!;
+      await savePayment(c, pay);
+      await c.query("update disputes set state = 'won' where id = $1", [op.dispute_id]);
+      await addSettlementItem(c, {
+        ref: op.network_ref!,
+        type: "chargeback_reversal",
+        merchantId: pay.merchant_id,
+        paymentId: pay.id,
+        amount: op.amount!,
+        shard,
+        ledgerTxn: outcome.txnId,
+        networkAt: op.network_at!,
+      });
+      await emit(c, pay, "dispute.won", { disputeId: op.dispute_id, amount: op.amount!.toString() });
+    });
+  },
+};
+
+// --- Merchant reserve ------------------------------------------------------------------------------------------
+
+// For ops with no payment. Same fencing, no payment row to update.
+export async function finishBare(
+  ctx: Ctx,
+  op: Op,
+  lease: Lease,
+  httpStatus: number,
+  body: unknown,
+  apply: (c: Client) => Promise<void>,
+): Promise<void> {
+  await tx(ctx.pool, async (c) => {
+    await fence(c, op.id, lease);
+    await apply(c);
+    await c.query(
+      `update operations set state = 'succeeded', result = $2, finished_at = now(), lease_until = null where id = $1`,
+      [op.id, JSON.stringify({ status: httpStatus, body })],
+    );
+  });
+}
+
+// A merchant deposits a reserve. That's cash in, and the money refunds draw on before any capture has settled.
+const reserveTopup: Record<string, Step> = {
+  async post(ctx, op, lease) {
+    await preparePosting(ctx, op, "topup", async () => ({
+      description: `reserve top-up for ${op.merchant_id}`,
+      entries: [
+        [await chartId(ctx, accountNames.available(op.merchant_id)), op.amount!],
+        [await chartId(ctx, accountNames.bankCash()), -op.amount!],
+      ],
+    }));
+    const outcome = await sendPosting(ctx, op, "topup");
+    if (outcome.kind === "rejected") return stick(ctx, op, lease, `top-up rejected: ${outcome.code} ${outcome.message}`);
+    await finishBare(ctx, op, lease, 201, { merchantId: op.merchant_id, amount: op.amount!.toString() }, (c) => recordPosting(c, op, "topup", outcome));
+  },
+};
+
 // --- The driver ------------------------------------------------------------------------------------------------
 
 export const FLOWS: Record<string, Record<string, Step>> = {
@@ -460,6 +658,10 @@ export const FLOWS: Record<string, Record<string, Step>> = {
   capture,
   void: voidSteps("void", "void"),
   expire: voidSteps("expire", "expire"),
+  refund,
+  chargeback_open: chargebackOpen,
+  chargeback_won: chargebackWon,
+  reserve_topup: reserveTopup,
 };
 
 async function claim(ctx: Ctx, opId: string): Promise<Lease | null> {

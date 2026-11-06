@@ -1,6 +1,7 @@
 import { createOp } from "./api.ts";
 import { tx } from "./db.ts";
 import { drive, sweep, type Ctx } from "./engine.ts";
+import { processInbox } from "./inbox.ts";
 
 // Auths nobody captured or voided in time. The hold must not sit on the cardholder's credit forever.
 export async function expireDue(ctx: Ctx, limit = 100): Promise<number> {
@@ -28,6 +29,7 @@ export async function expireDue(ctx: Ctx, limit = 100): Promise<number> {
 
 // One pass over all background work. Exposed so tests can step time deterministically.
 export async function tick(ctx: Ctx): Promise<void> {
+  await processInbox(ctx);
   await sweep(ctx);
   await expireDue(ctx);
 }
