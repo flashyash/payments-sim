@@ -184,7 +184,7 @@ payments-sim works against the ledger as it stands at `a704449`. These would eac
 - [x] M1 Scaffold + fake network + issuer (plumbing)
 - [x] M2 State machine, ledger posting, authorize/capture/void, idempotency (core)
 - [x] M3 Refunds, chargebacks, out-of-order inbox (core)
-- [ ] M4 Transactional outbox, signed webhooks (plumbing + core)
+- [x] M4 Transactional outbox, signed webhooks (plumbing + core)
 - [ ] M5 Settlement + reconciliation with injected mismatches (core)
 - [ ] M6 Chaos harness + invariant checker + sabotage control
 - [ ] M7 Load test, README numbers, SKILLS row, bullets

@@ -9,3 +9,16 @@ create table deliveries (
   received_at timestamptz not null default now()
 );
 create index deliveries_event on deliveries (event_id);
+
+create table secrets (
+  merchant_id text primary key,
+  secret      text not null
+);
+
+-- What a correct merchant does with at-least-once delivery: apply each event id once.
+create table processed_events (
+  event_id     text primary key,
+  merchant_id  text not null,
+  type         text not null,
+  processed_at timestamptz not null default now()
+);

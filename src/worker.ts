@@ -2,6 +2,7 @@ import { createOp } from "./api.ts";
 import { tx } from "./db.ts";
 import { drive, sweep, type Ctx } from "./engine.ts";
 import { processInbox } from "./inbox.ts";
+import { relayOnce } from "./webhooks.ts";
 
 // Auths nobody captured or voided in time. The hold must not sit on the cardholder's credit forever.
 export async function expireDue(ctx: Ctx, limit = 100): Promise<number> {
@@ -32,14 +33,14 @@ export async function tick(ctx: Ctx): Promise<void> {
   await processInbox(ctx);
   await sweep(ctx);
   await expireDue(ctx);
+  await relayOnce(ctx);
 }
 
-export function startWorker(ctx: Ctx, intervalMs = 100): () => Promise<void> {
-  let stopped = false;
-  const loop = (async () => {
-    while (!stopped) {
+function forever(work: () => Promise<unknown>, intervalMs: number, isStopped: () => boolean): Promise<void> {
+  return (async () => {
+    while (!isStopped()) {
       try {
-        await tick(ctx);
+        await work();
       } catch (err) {
         // Postgres or a peer is down. Keep trying; that's the worker's whole job.
         const msg = (err as Error).message;
@@ -48,8 +49,22 @@ export function startWorker(ctx: Ctx, intervalMs = 100): () => Promise<void> {
       await new Promise((r) => setTimeout(r, intervalMs));
     }
   })();
+}
+
+// Ops and webhooks run in separate loops, so a slow merchant endpoint can't hold up money movement.
+export function startWorker(ctx: Ctx, intervalMs = 100): () => Promise<void> {
+  let stopped = false;
+  const isStopped = () => stopped;
+  const loops = [
+    forever(async () => {
+      await processInbox(ctx);
+      await sweep(ctx);
+      await expireDue(ctx);
+    }, intervalMs, isStopped),
+    forever(() => relayOnce(ctx), intervalMs, isStopped),
+  ];
   return async () => {
     stopped = true;
-    await loop;
+    await Promise.all(loops);
   };
 }
