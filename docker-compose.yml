@@ -1,0 +1,17 @@
+# One Postgres server, separate databases per service (see scripts/setup-dbs.ts): the processor, the fake card
+# network and the ledger can only see each other over HTTP. Port 5434 so it doesn't collide with ledger's own 5433.
+services:
+  db:
+    image: postgres:17
+    command: ["postgres", "-c", "max_connections=300"]
+    environment:
+      POSTGRES_USER: payments
+      POSTGRES_PASSWORD: payments
+      POSTGRES_DB: postgres
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payments"]
+      interval: 1s
+      timeout: 3s
+      retries: 30

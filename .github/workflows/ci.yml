@@ -1,0 +1,42 @@
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: payments
+          POSTGRES_PASSWORD: payments
+          POSTGRES_DB: postgres
+        ports: ["5434:5432"]
+        options: >-
+          --health-cmd "pg_isready -U payments"
+          --health-interval 1s --health-timeout 3s --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: payments-sim
+      # The ledger is a sibling service, pinned to the commit this project was tested against.
+      - uses: actions/checkout@v4
+        with:
+          repository: flashyash/ledger
+          ref: a704449c24eb871730955d748ab863a46119884e
+          path: ledger
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+        working-directory: ledger
+      - run: npm ci
+        working-directory: payments-sim
+      - run: npm run typecheck
+        working-directory: payments-sim
+      - run: npm test
+        working-directory: payments-sim
+      - run: npm run chaos -- --profile ci
+        working-directory: payments-sim

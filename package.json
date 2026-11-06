@@ -1,0 +1,29 @@
+{
+  "name": "payments-sim",
+  "version": "0.1.0",
+  "description": "Simulated card payment processor on top of a double-entry ledger, built to survive chaos",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down -v",
+    "migrate": "node scripts/setup-dbs.ts",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "stack": "node scripts/stack.ts",
+    "demo": "node scripts/demo.ts",
+    "chaos": "node scripts/chaos.ts",
+    "load": "node scripts/load.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.12.7",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "engines": { "node": ">=24" }
+}
