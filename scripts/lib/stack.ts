@@ -189,12 +189,27 @@ export class Stack {
     return Object.fromEntries([...this.services.values()].map((s) => [s.name, s.restarts]));
   }
 
+  // The target may be mid-restart after a SIGKILL, so keep trying: it has to get these settings once it's back.
+  private async putFaults(url: string, f: object): Promise<void> {
+    const deadline = Date.now() + 30_000;
+    for (;;) {
+      try {
+        const res = await fetch(`${url}/admin/faults`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(f), signal: AbortSignal.timeout(2000) });
+        if (res.ok) return;
+      } catch (err) {
+        if (Date.now() > deadline) throw err;
+      }
+      if (Date.now() > deadline) throw new Error(`could not set faults on ${url}`);
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
   setNetworkFaults(f: object) {
-    return fetch(`${this.networkUrl}/admin/faults`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(f) });
+    return this.putFaults(this.networkUrl, f);
   }
 
   setSinkFaults(f: object) {
-    return fetch(`${this.sinkUrl}/admin/faults`, { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(f) });
+    return this.putFaults(this.sinkUrl, f);
   }
 
   setProxy(which: "ledger" | "network", f: Partial<ProxyFaults>) {

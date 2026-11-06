@@ -3,14 +3,23 @@ import http from "node:http";
 // PLUMBING: sits between the processor and the ledger or network, and loses things on purpose.
 // dropRequest: the upstream never sees it. dropResponse: the upstream applied it and the caller never finds out.
 
+export interface ProxiedRequest {
+  method: string;
+  url: string;
+  headers: http.IncomingHttpHeaders;
+  body: Buffer;
+}
+
 export interface ProxyFaults {
   dropRequestRate: number;
   dropResponseRate: number;
   /** Only requests whose path contains this are affected. Empty = all. */
   pathContains: string;
+  /** Changes a request on the wire before it goes upstream, whatever pathContains says. The sender never knows. */
+  rewrite: ((req: ProxiedRequest) => void) | null;
 }
 
-export const NO_PROXY_FAULTS: ProxyFaults = { dropRequestRate: 0, dropResponseRate: 0, pathContains: "" };
+export const NO_PROXY_FAULTS: ProxyFaults = { dropRequestRate: 0, dropResponseRate: 0, pathContains: "", rewrite: null };
 
 export function startProxy(targetPort: number, listenPort: number, initial: Partial<ProxyFaults> = {}) {
   const faults: ProxyFaults = { ...NO_PROXY_FAULTS, ...initial };
@@ -36,8 +45,11 @@ export function startProxy(targetPort: number, listenPort: number, initial: Part
         req.socket.destroy();
         return;
       }
+      const outgoing: ProxiedRequest = { method: req.method ?? "GET", url: req.url ?? "/", headers: { ...req.headers }, body: Buffer.concat(chunks) };
+      faults.rewrite?.(outgoing);
+      if (faults.rewrite && outgoing.headers["content-length"] !== undefined) outgoing.headers["content-length"] = String(outgoing.body.length);
       const upstream = http.request(
-        { host: "127.0.0.1", port: targetPort, path: req.url, method: req.method, headers: req.headers, agent },
+        { host: "127.0.0.1", port: targetPort, path: outgoing.url, method: outgoing.method, headers: outgoing.headers, agent },
         (upRes) => {
           const out: Buffer[] = [];
           upRes.on("data", (d) => out.push(d));
@@ -55,7 +67,7 @@ export function startProxy(targetPort: number, listenPort: number, initial: Part
         },
       );
       upstream.on("error", () => req.socket.destroy());
-      upstream.end(Buffer.concat(chunks));
+      upstream.end(outgoing.body);
     });
   });
   server.keepAliveTimeout = 30_000;

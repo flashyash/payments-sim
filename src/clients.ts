@@ -31,8 +31,6 @@ export interface LedgerTxn {
   entries: { accountId: string; amount: string }[];
 }
 
-const SABOTAGE = process.env.SABOTAGE ?? "";
-
 export class LedgerClient {
   url: string;
   timeoutMs: number;
@@ -49,11 +47,9 @@ export class LedgerClient {
   }
 
   async post(key: string, body: PostingBody): Promise<PostOutcome> {
-    // Sabotage for the harness's negative control: a fresh key per attempt turns retries into double postings.
-    const sentKey = SABOTAGE === "unstable_ledger_key" ? `${key}:${Math.random()}` : key;
     const res = await call(
       `${this.url}/transactions`,
-      { method: "POST", headers: { "content-type": "application/json", "idempotency-key": sentKey }, body: JSON.stringify(body) },
+      { method: "POST", headers: { "content-type": "application/json", "idempotency-key": key }, body: JSON.stringify(body) },
       this.timeoutMs,
     );
     return this.posted(res);

@@ -73,7 +73,7 @@ dedupe on the event id.
 
 All measured on an Apple M5 Pro laptop, with client, services and a Postgres container (Docker VM: 2 CPUs, 4 GB) sharing the machine.
 
-**Tests:** 171 (93 state-machine matrix, 27 flows, 14 refunds and chargebacks, 13 reconciliation, 10 webhooks, 8 fake network, 6 recovery).
+**Tests:** 174 (93 state-machine matrix, 27 flows, 14 refunds and chargebacks, 13 reconciliation, 10 webhooks, 8 fake network, 6 recovery, 3 sabotage).
 
 **Chaos** (`npm run chaos`, [results/chaos-full.json](results/chaos-full.json)): 40 scenarios, **0 invariant violations**, every scenario
 confirmed to have actually fired.
@@ -82,11 +82,11 @@ confirmed to have actually fired.
 |---|---|
 | SIGKILL at each of 22 named steps across all flows | 22 of 22 hit, 0 violations |
 | Lost requests, then lost responses, at each of 7 external calls (50% of matching calls) | 14 of 14 fired, 0 violations |
-| 90 s of everything at once | 478 full flows, 3,346 payments, 73 random SIGKILLs across API, worker, ledger, network and sink; 0 violations |
-| Sabotage controls: unstable ledger key, unstable network ref, skipped outbox | 3 of 3 caught, as 59, 39 and 21 violations |
+| 90 s of everything at once | 586 full flows, 4,102 payments, 70 random SIGKILLs across API, worker, ledger, network and sink; 0 violations |
+| Sabotage controls: unstable ledger key, unstable network ref, skipped outbox | 3 of 3 caught, as 85, 42 and 21 violations. The sabotage now lives in the harness (wire rewrites and a database rule), so services carry no sabotage code |
 
-In the 90 s storm, the faults that actually occurred were 968 network retransmits, 2,283 ops retried, 18 refunds reversed, 900 disputes, 624 notifications parked for
-ordering, and 1,111 duplicate webhook deliveries (out of 9,742 events, all delivered). Longest time to go quiet after faults stopped: about 15 s, against a 60 s bound.
+In the 90 s storm, the faults that actually occurred were 1,195 network retransmits, 2,619 ops retried, 30 refunds reversed, 1,081 disputes, 742 notifications parked for
+ordering, and 1,331 duplicate webhook deliveries (out of 11,902 events, all delivered). Longest time to go quiet after faults stopped: about 15 s, against a 60 s bound.
 
 This storm didn't happen to exercise auth tombstones, payments failed by timeout, or a refund rejected for funds (0 of each), so those paths are covered by `npm test`
 and the targeted scenarios above.
@@ -96,14 +96,14 @@ invariants held in all of them):
 
 | Scenario | Full flows/s | Authorize p50 / p99 (ms) | Capture p50 / p99 (ms) |
 |---|---|---|---|
-| 16 shards, 20 merchants | 92–113 | 86–105 / 200–259 | 77–96 / 173–187 |
-| 1 shard (hot accounts), 20 merchants | 92–96 | 67–93 / 222–307 | 88–132 / 306–365 |
-| 16 shards, 1 merchant | 108–123 | 69–75 / 174–227 | 83–97 / 167–227 |
-| 16 shards, 20 merchants, network 20–50 ms | 105–115 | 87–91 / 171–223 | 82–86 / 136–185 |
+| 16 shards, 20 merchants | 109–122 | 81–92 / 167–200 | 74–83 / 150 |
+| 1 shard (hot accounts), 20 merchants | 92–100 | 59–88 / 205–319 | 81–137 / 302–421 |
+| 16 shards, 1 merchant | 126–140 | 51–58 / 145–224 | 79–82 / 197–208 |
+| 16 shards, 20 merchants, network 20–50 ms | 101–117 | 82–98 / 180–215 | 78–92 / 152–169 |
 
 Raw output: [results/load.json](results/load.json). [results/load-sleep-interrupted.json](results/load-sleep-interrupted.json) is kept as an example of what not to trust: a run hit by laptop sleep, with a p99 of 425 s.
 
-The client scaling table below is from an earlier set of runs:
+The client scaling table below is from an earlier set of runs, before the query changes described below:
 
 | Clients (16 shards, 20 merchants, 12 s, one run each) | Flows/s | Authorize p50 / p99 (ms) |
 |---|---|---|
@@ -113,21 +113,25 @@ The client scaling table below is from an earlier set of runs:
 | 50 | 120 | 215 / 435 |
 
 What these show:
-- A full flow (authorize + capture) costs about **43 database commits** across the four databases, webhooks included.
+- A full flow (authorize + capture) costs about **41 database commits** across the four databases, webhooks included.
 - Throughput tops out around **90–120 flows/s** (about 180–250 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
 - Sharding helped less than expected in throughput, but with 1 shard capture p99 was roughly 2× worse.
-- **The bottleneck isn't identified.** It isn't commit fsync: a run with `synchronous_commit=off` was unchanged at 111 flows/s. No Node service looked saturated (about 40%
-  of a core at most, from `ps`, which averages), Postgres used about 85% of the VM's 200%, and the SSH port-forward carrying all Postgres traffic used about 52% of a core. Proper profiling is the next step.
+- **The ceiling at this setup is the laptop's Docker path, not the payment code.** Each limit below only showed up after removing the one above it (single 15 s runs, 20 clients; raw files in [results/profiling](results/profiling)):
+  1. **Docker VM CPU, at 2 vCPUs.** The VM was 3–4% idle. Postgres used about 100 of its 200%, while sshd, docker-proxy and softirq together used about 110. Close to half the VM goes on moving bytes. A flow makes about 114 client round trips, and each statement took about 1.7 ms from the client against about 0.11 ms of Postgres execution.
+  2. **The SSH port-forward, with more vCPUs.** 2 vCPUs: 101–118 flows/s. 4: 156–171. 8: 166–175, with the VM 45% idle. Inside the 8-vCPU VM with no forward: 437–515 flows/s, though webhook delivery backed up (p50 1.5–2.8 s).
+  3. **Durable commit on native Postgres, with no VM at all.** `F_FULLFSYNC`: 152 flows/s, about 3.1 ms per WAL flush. Plain macOS fsync, which doesn't flush the drive cache and so isn't a durable result: 421 flows/s, with the API event loop saturated.
+- **What it isn't:** Node services at the 2-vCPU setting (API event-loop use about 0.45), connection-pool waits (0.02 ms), or commit fsync at that setting (`synchronous_commit=off` gave no gain).
+- **Fewer round trips, gain not settled.** Prepared statements, single fenced statements for step updates, and less frequent lease renewal cut commits from about 43 to about 41 per flow, with no durability change. An interleaved A/B (6 runs per side) showed about +28% (mean 102 to 130 flows/s), or +19% with network latency, but the separate full load runs above show no clear gain. Treat it as somewhere between 0 and 28%.
 
-Also: webhook delivery p50 47–73 ms, p99 85–185 ms under that load. Reconciliation plus settlement took about 1.1 s for 1,800 lines.
+Also: webhook delivery p50 47–78 ms, p99 87–164 ms under that load. Reconciliation plus settlement took about 1.1 s for 1,800 lines.
 
-**Reconciliation** (`npm run recon-eval`, [results/recon-eval.json](results/recon-eval.json)): over 5 simulated days and 1,007 file lines, 68 injected mismatches of 6 kinds, 68 detected,
+**Reconciliation** (`npm run recon-eval`, [results/recon-eval.json](results/recon-eval.json)): over 5 simulated days and 1,005 file lines, 60 injected mismatches of 6 kinds, 60 detected,
 0 false positives. Ground truth comes from the injector's manifest, which the matcher can't see. An earlier run scored one apparent miss, which was the same line being
 shifted two days running: reconciliation correctly didn't re-report an exception that was still open, and the evaluator now counts those separately.
 
 ## Not verified
 
-- **Load numbers come from one laptop,** with client, services and databases sharing it, and are not a capacity claim.
+- **Load numbers come from one laptop,** with client, services and databases sharing it, and are not a capacity claim. Other CPU-heavy jobs ran during some profiling runs; those rounds are excluded.
 
 ## What the build showed / what I'd do differently
 
@@ -140,5 +144,5 @@ _Drafted by Claude from what happened during the build._
 - **The first explanation of a slow run is usually wrong.** Commit fsync looked like the throughput limit, and a run with it off showed it wasn't. Stalls first looked like overlapping jobs, then a slow disk, and the power log showed the
   laptop going to sleep. Load tests now record pauses so a bad run gets labelled by evidence.
 - **Tight timeouts made tests flaky under load.** Deadline tests now move the deadline in the database instead of waiting on a clock.
-- **Differently next time:** one commit per step is simple and costs about 43 commits per flow, so I'd batch steps that have no external call between them. I'd also add ledger support for final rejections and lookup by key (proposals in DESIGN.md), and let
+- **Differently next time:** one commit per step is simple and costs about 41 commits per flow, so I'd batch steps that have no external call between them. I'd also add ledger support for final rejections and lookup by key (proposals in DESIGN.md), and let
   refunds draw on pending funds.

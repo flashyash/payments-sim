@@ -109,6 +109,18 @@ async function runScenario(sc: Scenario) {
         });
       }
     }, 3000);
+    // docker stats sees only the Postgres container. /proc/stat sees the whole VM, sshd and docker-proxy included.
+    const vmStat = () => new Promise<number[] | null>((resolve) => {
+      execFile("docker", ["exec", "payments-sim-db-1", "head", "-1", "/proc/stat"], (err, out) => resolve(err ? null : out.trim().split(/\s+/).slice(1, 9).map(Number)));
+    });
+    const vm0 = await vmStat();
+    let hostIdlePercent: number | null = null;
+    setTimeout(() => {
+      execFile("top", ["-l", "2", "-n", "0", "-s", "3"], (err, out) => {
+        const m = [...(err ? "" : out).matchAll(/([0-9.]+)% idle/g)].pop();
+        if (m) hostIdlePercent = Number(m[1]);
+      });
+    }, 4000);
     const started = performance.now();
     const wallStart = Date.now();
     const stopAt = started + seconds * 1000;
@@ -136,6 +148,8 @@ async function runScenario(sc: Scenario) {
     );
     const elapsed = (performance.now() - started) / 1000;
     clearInterval(sampler);
+    const vm1 = await vmStat();
+    const vmIdlePercent = vm0 && vm1 ? +((100 * (vm1[3] - vm0[3])) / vm1.reduce((a, v, i) => a + v - vm0[i], 0)).toFixed(1) : null;
     const quiesceMs = await quiesce(stack, 120_000);
     await new Promise((r) => setTimeout(r, 1000));
     const commitsAfter = await commits();
@@ -160,6 +174,8 @@ async function runScenario(sc: Scenario) {
       requestsPerSec: +((auth.length + capture.length) / elapsed).toFixed(0),
       failed,
       commitsPerFlow: +(Number(commitsAfter - commitsBefore) / Math.max(flows, 1)).toFixed(1),
+      vmIdlePercent,
+      hostIdlePercent,
       postgresCpuPercent: +(cpu.reduce((x, y) => x + y, 0) / Math.max(cpu.length, 1)).toFixed(0),
       // 100 = one core. Node runs each service on one thread, so a service near 100 is saturated.
       processCpuPercent: Object.fromEntries(Object.entries(procCpu).map(([k, v]) => [k, +(v.reduce((x, y) => x + y, 0) / v.length).toFixed(0)])),
@@ -199,7 +215,7 @@ for (const sc of SCENARIOS.filter((x) => !filter || x.name.includes(filter))) {
       const r = await runScenario(sc);
       out.push({ run, ...r });
       console.log(
-        `${sc.name} (run ${run}): ${r.flowsPerSec} flows/s, ${r.requestsPerSec} req/s, auth p50 ${r.authorizeMs.p50} p99 ${r.authorizeMs.p99}, capture p50 ${r.captureMs.p50} p99 ${r.captureMs.p99}, flow p50 ${r.flowMs.p50} p99 ${r.flowMs.p99}, failed ${r.failed}, commits/flow ${r.commitsPerFlow}, pg cpu ${r.postgresCpuPercent}%, webhook p50 ${r.webhookDeliveryMs.p50} p99 ${r.webhookDeliveryMs.p99}, recon ${r.recon.lines} lines ${r.recon.ms} ms (${r.recon.exceptions} exc), drain ${r.backlogDrainMs} ms, violations ${r.violations}, host load ${r.hostLoadAverage.before}→${r.hostLoadAverage.after}, max ckpt sync ${r.maxCheckpointSyncSeconds} s, max pause ${r.maxPauseMs} ms, valid ${r.valid}`,
+        `${sc.name} (run ${run}): ${r.flowsPerSec} flows/s, ${r.requestsPerSec} req/s, auth p50 ${r.authorizeMs.p50} p99 ${r.authorizeMs.p99}, capture p50 ${r.captureMs.p50} p99 ${r.captureMs.p99}, flow p50 ${r.flowMs.p50} p99 ${r.flowMs.p99}, failed ${r.failed}, commits/flow ${r.commitsPerFlow}, pg cpu ${r.postgresCpuPercent}%, webhook p50 ${r.webhookDeliveryMs.p50} p99 ${r.webhookDeliveryMs.p99}, recon ${r.recon.lines} lines ${r.recon.ms} ms (${r.recon.exceptions} exc), drain ${r.backlogDrainMs} ms, violations ${r.violations}, vm idle ${r.vmIdlePercent}%, host idle ${r.hostIdlePercent}%, host load ${r.hostLoadAverage.before}→${r.hostLoadAverage.after}, max ckpt sync ${r.maxCheckpointSyncSeconds} s, max pause ${r.maxPauseMs} ms, valid ${r.valid}`,
       );
       for (const v of r.violationExamples) console.log(`   ${v}`);
     } catch (err) {

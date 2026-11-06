@@ -1,0 +1,3 @@
+16 shards, 20 merchants (run 1): 515 flows/s, 1030 req/s, auth p50 19.8 p99 34.9, capture p50 17.1 p99 31.5, flow p50 37.3 p99 60.1, failed 0, commits/flow 42.2, pg cpu 0%, webhook p50 2814 p99 5814, violations 0, host l
+16 shards, 20 merchants (run 2): 463 flows/s, 927 req/s, auth p50 21.4 p99 49.5, capture p50 18.7 p99 41.4, flow p50 40.3 p99 85.7, failed 0, commits/flow 42, pg cpu 0%, webhook p50 1659 p99 3961, violations 0, host load
+16 shards, 20 merchants (run 3): 437 flows/s, 874 req/s, auth p50 22.4 p99 55.6, capture p50 19.5 p99 48.3, flow p50 42.2 p99 96.1, failed 0, commits/flow 41.6, pg cpu 0%, webhook p50 1533 p99 3208, violations 0, host lo

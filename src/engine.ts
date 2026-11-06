@@ -97,15 +97,15 @@ export async function fence(c: Client, opId: string, lease: Lease): Promise<void
   if (!rowCount) throw new Fenced(opId);
 }
 
+// One statement is its own fence: it waits for the row lock, then rechecks the token against the row as committed.
 async function setStep(ctx: Ctx, op: Op, lease: Lease, step: string, networkAt?: string): Promise<void> {
-  await tx(ctx.pool, async (c) => {
-    await fence(c, op.id, lease);
-    await c.query("update operations set step = $2, network_at = coalesce($3, network_at) where id = $1", [
-      op.id,
-      step,
-      networkAt ?? null,
-    ]);
-  });
+  const { rowCount } = await ctx.pool.query("update operations set step = $3, network_at = coalesce($4, network_at) where id = $1 and lease_token = $2", [
+    op.id,
+    lease.token.toString(),
+    step,
+    networkAt ?? null,
+  ]);
+  if (!rowCount) throw new Fenced(op.id);
 }
 
 async function lockPayment(c: Client, id: string): Promise<Payment> {
@@ -118,7 +118,6 @@ export async function emit(c: Client, p: Payment, type: string, extra: object = 
   const seq = p.event_seq + 1;
   await c.query("update payments set event_seq = $2 where id = $1", [p.id, seq]);
   p.event_seq = seq;
-  if (process.env.SABOTAGE === "skip_outbox") return;
   await c.query(
     `insert into outbox (event_id, merchant_id, payment_id, type, payload) values ($1, $2, $3, $4, $5)`,
     [
@@ -245,11 +244,6 @@ async function networkCall<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-// Sabotage for the harness's negative control: a fresh ref per attempt makes the network apply retries twice.
-function sentRef(op: Op): string {
-  return process.env.SABOTAGE === "unstable_network_ref" ? `${op.network_ref}:${op.attempts}` : op.network_ref!;
-}
-
 async function payment(ctx: Ctx, id: string): Promise<Payment> {
   const { rows } = await ctx.pool.query<Payment>("select * from payments where id = $1", [id]);
   return rows[0];
@@ -316,10 +310,12 @@ const authorize: Record<string, Step> = {
         if (err instanceof Unknown) throw new Retry(err.message);
         throw err;
       }
-      await tx(ctx.pool, async (c) => {
-        await fence(c, op.id, lease);
-        await c.query("update payments set hold_account_id = $2 where id = $1", [p.id, holdId]);
-      });
+      const { rowCount } = await ctx.pool.query(
+        `with fenced as (select 1 from operations where id = $1 and lease_token = $2 for update)
+         update payments set hold_account_id = $4 where id = $3 and exists (select 1 from fenced)`,
+        [op.id, lease.token.toString(), p.id, holdId],
+      );
+      if (!rowCount) throw new Fenced(op.id);
       p = { ...p, hold_account_id: holdId };
     }
     const contra = await chartId(ctx, accountNames.holdContra(shardOf(p.id, ctx.cfg.shards)));
@@ -359,7 +355,7 @@ const capture: Record<string, Step> = {
     const p = await payment(ctx, op.payment_id!);
     failpoint("capture.network.before");
     const reply = await networkCall(() =>
-      ctx.network.capture({ ref: sentRef(op), authRef: p.auth_ref, amount: op.amount!.toString(), final: op.final_capture }),
+      ctx.network.capture({ ref: op.network_ref!, authRef: p.auth_ref, amount: op.amount!.toString(), final: op.final_capture }),
     );
     failpoint("capture.network.after");
     if (reply.status === "approved") return setStep(ctx, op, lease, "post", reply.appliedAt);
@@ -492,7 +488,7 @@ const refund: Record<string, Step> = {
 
   async network(ctx, op, lease) {
     const p = await payment(ctx, op.payment_id!);
-    const reply = await networkCall(() => ctx.network.refund({ ref: sentRef(op), authRef: p.auth_ref, amount: op.amount!.toString() }));
+    const reply = await networkCall(() => ctx.network.refund({ ref: op.network_ref!, authRef: p.auth_ref, amount: op.amount!.toString() }));
     failpoint("refund.network.after");
     if (reply.status !== "approved") return setStep(ctx, op, lease, "reverse_post");
     const { rows } = await ctx.pool.query<{ ledger_txn_id: string }>("select ledger_txn_id from ledger_postings where key = $1", [postingKey(op.id, "refund")]);
@@ -688,12 +684,15 @@ export type DriveResult = "finished" | "retry" | "busy";
 export async function drive(ctx: Ctx, opId: string): Promise<DriveResult> {
   const lease = await claim(ctx, opId);
   if (!lease) return "busy";
+  let renewedAt = performance.now();
   try {
-    for (let first = true; ; first = false) {
+    for (;;) {
       const op = await loadOp(ctx, opId);
       if (op.state !== "in_progress") return "finished";
-      // Claiming just set the lease, so only later steps renew it. Each renewal is a commit, and commits are the bottleneck.
-      if (!first) {
+      // A renewal is a commit, so skip it while most of the lease is left. Every write is fenced either way: this only
+      // changes how soon another driver may take over, never whether a driver that lost its lease can write.
+      if (performance.now() - renewedAt > ctx.cfg.leaseMs / 3) {
+        renewedAt = performance.now();
         const renewed = await ctx.pool.query(
           `update operations set lease_until = now() + ($3 || ' milliseconds')::interval where id = $1 and lease_token = $2`,
           [opId, lease.token.toString(), String(ctx.cfg.leaseMs)],

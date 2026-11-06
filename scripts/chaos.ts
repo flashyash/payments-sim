@@ -9,6 +9,7 @@ import path from "node:path";
 import { ALL_FAILPOINTS } from "../src/failpoints.ts";
 import { checkInvariants } from "../src/invariants.ts";
 import { auditAcks, fullFlow, Merchant, newAcks, quiesce, settleOnce, setupMerchants, type Acks } from "./lib/driver.ts";
+import { SABOTAGE, type SabotageName } from "./lib/sabotage.ts";
 import { FAST_RECOVERY, Stack, type ServiceName } from "./lib/stack.ts";
 
 const profile = process.argv.includes("--profile") ? process.argv[process.argv.indexOf("--profile") + 1] : "full";
@@ -236,15 +237,16 @@ const prefixed = (o: Record<string, number>) => Object.fromEntries(Object.entrie
 
 // Negative controls. Each breaks one guarantee on purpose; a run that stays green here means the oracle is blind.
 async function part4(results: Result[]): Promise<void> {
-  const controls = [
-    { sabotage: "unstable_ledger_key", which: "ledger" as const, expect: "postings_exact" },
-    { sabotage: "unstable_network_ref", which: "network" as const, expect: "nothing_captured_twice" },
-    { sabotage: "skip_outbox", which: "ledger" as const, expect: "webhooks_delivered" },
+  const controls: { sabotage: SabotageName; which: "ledger" | "network"; expect: string }[] = [
+    { sabotage: "unstable_ledger_key", which: "ledger", expect: "postings_exact" },
+    { sabotage: "unstable_network_ref", which: "network", expect: "nothing_captured_twice" },
+    { sabotage: "skip_outbox", which: "ledger", expect: "webhooks_delivered" },
   ];
   for (const c of controls) {
     log(`part 4: sabotage ${c.sabotage}`);
-    const stack = new Stack({ dbs: DBS, basePort: BASE, withProxies: true, env: { ...FAST_RECOVERY, SABOTAGE: c.sabotage } });
+    const stack = new Stack({ dbs: DBS, basePort: BASE, withProxies: true, env: FAST_RECOVERY });
     await stack.start();
+    await SABOTAGE[c.sabotage](stack);
     const acks = newAcks();
     try {
       const merchants = await setupMerchants(stack, 1, "sb");

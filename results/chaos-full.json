@@ -1,10 +1,10 @@
 {
   "profile": "full",
-  "durationSeconds": 268,
+  "durationSeconds": 249,
   "scenarios": 40,
   "scenariosWithViolations": 0,
   "scenariosNotExercised": [],
-  "maxQuiesceMs": 14694,
+  "maxQuiesceMs": 14754,
   "results": [
     {
       "name": "kill@api.admitted",
@@ -22,7 +22,7 @@
     {
       "name": "kill@authorize.network.before",
       "fired": true,
-      "quiesceMs": 207,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 14,
@@ -35,7 +35,7 @@
     {
       "name": "kill@authorize.network.after",
       "fired": true,
-      "quiesceMs": 204,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 21,
@@ -48,7 +48,7 @@
     {
       "name": "kill@authorize.open_hold.before",
       "fired": true,
-      "quiesceMs": 204,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 28,
@@ -61,7 +61,7 @@
     {
       "name": "kill@authorize.open_hold.after",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 204,
       "violations": [],
       "checked": {
         "payments": 35,
@@ -74,7 +74,7 @@
     {
       "name": "kill@authorize.reverse.after",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 43,
@@ -87,7 +87,7 @@
     {
       "name": "kill@capture.network.before",
       "fired": true,
-      "quiesceMs": 203,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 50,
@@ -113,7 +113,7 @@
     {
       "name": "kill@capture.post.before",
       "fired": true,
-      "quiesceMs": 206,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 64,
@@ -126,7 +126,7 @@
     {
       "name": "kill@capture.post.after",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 204,
       "violations": [],
       "checked": {
         "payments": 71,
@@ -139,7 +139,7 @@
     {
       "name": "kill@void.network.after",
       "fired": true,
-      "quiesceMs": 207,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 78,
@@ -152,7 +152,7 @@
     {
       "name": "kill@void.post.after",
       "fired": true,
-      "quiesceMs": 207,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 85,
@@ -165,7 +165,7 @@
     {
       "name": "kill@refund.post.before",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 203,
       "violations": [],
       "checked": {
         "payments": 92,
@@ -178,7 +178,7 @@
     {
       "name": "kill@refund.post.after",
       "fired": true,
-      "quiesceMs": 103,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 99,
@@ -191,7 +191,7 @@
     {
       "name": "kill@refund.network.after",
       "fired": true,
-      "quiesceMs": 207,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 106,
@@ -217,7 +217,7 @@
     {
       "name": "kill@chargeback.post.after",
       "fired": true,
-      "quiesceMs": 2163,
+      "quiesceMs": 2153,
       "violations": [],
       "checked": {
         "payments": 120,
@@ -230,7 +230,7 @@
     {
       "name": "kill@settlement.post.after",
       "fired": true,
-      "quiesceMs": 3843,
+      "quiesceMs": 3801,
       "violations": [],
       "checked": {
         "payments": 127,
@@ -247,55 +247,55 @@
       "violations": [],
       "checked": {
         "payments": 134,
-        "ledgerTransactions": 401,
+        "ledgerTransactions": 400,
         "networkAuths": 134,
-        "webhookEvents": 438,
+        "webhookEvents": 437,
         "settlementItems": 189
       }
     },
     {
       "name": "kill@outbox.send.before",
       "fired": true,
-      "quiesceMs": 14694,
+      "quiesceMs": 14754,
       "violations": [],
       "checked": {
         "payments": 141,
-        "ledgerTransactions": 422,
+        "ledgerTransactions": 421,
         "networkAuths": 141,
-        "webhookEvents": 461,
+        "webhookEvents": 460,
         "settlementItems": 199
       }
     },
     {
       "name": "kill@outbox.send.after",
       "fired": true,
-      "quiesceMs": 14473,
+      "quiesceMs": 14743,
       "violations": [],
       "checked": {
         "payments": 148,
-        "ledgerTransactions": 443,
+        "ledgerTransactions": 442,
         "networkAuths": 148,
-        "webhookEvents": 484,
+        "webhookEvents": 483,
         "settlementItems": 209
       }
     },
     {
       "name": "kill@recon.prepared",
       "fired": true,
-      "quiesceMs": 1,
+      "quiesceMs": 0,
       "violations": [],
       "checked": {
         "payments": 155,
-        "ledgerTransactions": 464,
+        "ledgerTransactions": 463,
         "networkAuths": 155,
-        "webhookEvents": 507,
+        "webhookEvents": 506,
         "settlementItems": 219
       }
     },
     {
       "name": "lost response: ledger /transactions",
       "fired": true,
-      "quiesceMs": 315,
+      "quiesceMs": 211,
       "violations": [],
       "checked": {
         "payments": 7,
@@ -308,7 +308,7 @@
     {
       "name": "lost request: ledger /transactions",
       "fired": true,
-      "quiesceMs": 309,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
         "payments": 14,
@@ -321,7 +321,7 @@
     {
       "name": "lost response: ledger /accounts",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 203,
       "violations": [],
       "checked": {
         "payments": 21,
@@ -334,7 +334,7 @@
     {
       "name": "lost request: ledger /accounts",
       "fired": true,
-      "quiesceMs": 205,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
         "payments": 28,
@@ -350,37 +350,37 @@
       "quiesceMs": 204,
       "violations": [],
       "checked": {
-        "payments": 98,
-        "ledgerTransactions": 282,
-        "networkAuths": 98,
-        "webhookEvents": 299,
-        "settlementItems": 130
+        "payments": 49,
+        "ledgerTransactions": 142,
+        "networkAuths": 49,
+        "webhookEvents": 152,
+        "settlementItems": 67
       }
     },
     {
       "name": "lost request: ledger reverse",
       "fired": true,
-      "quiesceMs": 203,
+      "quiesceMs": 204,
       "violations": [],
       "checked": {
-        "payments": 126,
-        "ledgerTransactions": 363,
-        "networkAuths": 126,
-        "webhookEvents": 384,
-        "settlementItems": 166
+        "payments": 70,
+        "ledgerTransactions": 203,
+        "networkAuths": 70,
+        "webhookEvents": 216,
+        "settlementItems": 94
       }
     },
     {
       "name": "lost response: network auth",
       "fired": true,
-      "quiesceMs": 206,
+      "quiesceMs": 102,
       "violations": [],
       "checked": {
-        "payments": 133,
-        "ledgerTransactions": 383,
-        "networkAuths": 133,
-        "webhookEvents": 406,
-        "settlementItems": 176
+        "payments": 84,
+        "ledgerTransactions": 242,
+        "networkAuths": 84,
+        "webhookEvents": 259,
+        "settlementItems": 114
       }
     },
     {
@@ -389,120 +389,120 @@
       "quiesceMs": 206,
       "violations": [],
       "checked": {
-        "payments": 140,
-        "ledgerTransactions": 403,
-        "networkAuths": 140,
-        "webhookEvents": 428,
-        "settlementItems": 186
+        "payments": 91,
+        "ledgerTransactions": 262,
+        "networkAuths": 91,
+        "webhookEvents": 281,
+        "settlementItems": 124
       }
     },
     {
       "name": "lost response: network capture",
       "fired": true,
-      "quiesceMs": 206,
+      "quiesceMs": 306,
       "violations": [],
       "checked": {
-        "payments": 154,
-        "ledgerTransactions": 442,
-        "networkAuths": 154,
-        "webhookEvents": 471,
-        "settlementItems": 206
+        "payments": 98,
+        "ledgerTransactions": 282,
+        "networkAuths": 98,
+        "webhookEvents": 303,
+        "settlementItems": 134
       }
     },
     {
       "name": "lost request: network capture",
       "fired": true,
-      "quiesceMs": 207,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
-        "payments": 161,
-        "ledgerTransactions": 462,
-        "networkAuths": 161,
-        "webhookEvents": 493,
-        "settlementItems": 216
+        "payments": 105,
+        "ledgerTransactions": 302,
+        "networkAuths": 105,
+        "webhookEvents": 325,
+        "settlementItems": 144
       }
     },
     {
       "name": "lost response: network void",
       "fired": true,
-      "quiesceMs": 204,
+      "quiesceMs": 203,
       "violations": [],
       "checked": {
-        "payments": 175,
-        "ledgerTransactions": 501,
-        "networkAuths": 175,
-        "webhookEvents": 536,
-        "settlementItems": 236
+        "payments": 126,
+        "ledgerTransactions": 360,
+        "networkAuths": 126,
+        "webhookEvents": 389,
+        "settlementItems": 174
       }
     },
     {
       "name": "lost request: network void",
       "fired": true,
-      "quiesceMs": 203,
+      "quiesceMs": 204,
       "violations": [],
       "checked": {
-        "payments": 189,
-        "ledgerTransactions": 540,
-        "networkAuths": 189,
-        "webhookEvents": 579,
-        "settlementItems": 256
+        "payments": 133,
+        "ledgerTransactions": 380,
+        "networkAuths": 133,
+        "webhookEvents": 411,
+        "settlementItems": 184
       }
     },
     {
       "name": "lost response: network refund",
       "fired": true,
-      "quiesceMs": 204,
+      "quiesceMs": 206,
       "violations": [],
       "checked": {
-        "payments": 217,
-        "ledgerTransactions": 617,
-        "networkAuths": 217,
-        "webhookEvents": 664,
-        "settlementItems": 296
+        "payments": 168,
+        "ledgerTransactions": 476,
+        "networkAuths": 168,
+        "webhookEvents": 517,
+        "settlementItems": 234
       }
     },
     {
       "name": "lost request: network refund",
       "fired": true,
-      "quiesceMs": 206,
+      "quiesceMs": 205,
       "violations": [],
       "checked": {
-        "payments": 259,
-        "ledgerTransactions": 732,
-        "networkAuths": 259,
-        "webhookEvents": 791,
-        "settlementItems": 356
+        "payments": 196,
+        "ledgerTransactions": 553,
+        "networkAuths": 196,
+        "webhookEvents": 602,
+        "settlementItems": 274
       }
     },
     {
       "name": "all faults for 90 s",
       "fired": true,
-      "quiesceMs": 4038,
+      "quiesceMs": 524,
       "violations": [],
       "checked": {
-        "payments": 3346,
-        "ledgerTransactions": 8655,
-        "networkAuths": 3346,
-        "webhookEvents": 9742,
-        "settlementItems": 4468,
-        "flows": 478,
-        "kills_worker": 12,
-        "kills_ledger": 19,
-        "kills_network": 17,
-        "kills_sink": 15,
-        "kills_api": 10,
-        "networkRetransmits": 968,
+        "payments": 4102,
+        "ledgerTransactions": 10557,
+        "networkAuths": 4102,
+        "webhookEvents": 11902,
+        "settlementItems": 5416,
+        "flows": 586,
+        "kills_api": 14,
+        "kills_worker": 22,
+        "kills_ledger": 11,
+        "kills_sink": 11,
+        "kills_network": 12,
+        "networkRetransmits": 1195,
         "authsTombstoned": 0,
         "paymentsFailedByTimeout": 0,
-        "opsRetried": 2283,
-        "refundsReversed": 18,
+        "opsRetried": 2619,
+        "refundsReversed": 30,
         "refundsRejectedFinal": 0,
-        "notificationsParked": 624,
-        "disputes": 900,
-        "webhookAttempts": 12057,
-        "webhookDuplicates": 1111,
-        "settlementFiles": 16,
-        "transientReconExceptions": 86
+        "notificationsParked": 742,
+        "disputes": 1081,
+        "webhookAttempts": 14710,
+        "webhookDuplicates": 1331,
+        "settlementFiles": 15,
+        "transientReconExceptions": 94
       }
     },
     {
@@ -511,7 +511,7 @@
       "quiesceMs": null,
       "violations": [],
       "checked": {
-        "violationsSeen": 59
+        "violationsSeen": 85
       }
     },
     {
@@ -520,7 +520,7 @@
       "quiesceMs": null,
       "violations": [],
       "checked": {
-        "violationsSeen": 39
+        "violationsSeen": 42
       }
     },
     {

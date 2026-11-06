@@ -1,0 +1,18 @@
+# Profiling overlay: docker compose -f docker-compose.yml -f docker-compose.profile.yml up -d --wait
+# Adds query statistics and IO timing for scripts/profile.ts. Not used by tests, chaos or the load numbers.
+services:
+  db:
+    command:
+      - postgres
+      - -c
+      - max_connections=300
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
+      - -c
+      - pg_stat_statements.track_planning=on
+      - -c
+      - track_io_timing=on
+      - -c
+      - track_wal_io_timing=on
