@@ -304,8 +304,9 @@ export function buildNetwork(opts: NetworkOptions) {
     if (roll < faults.dropRequestRate) return breakConnection();
     if (roll < faults.dropRequestRate + faults.lateApplyRate) {
       const timer = setTimeout(() => {
-        lateTimers.delete(timer);
-        apply().catch(() => {});
+        apply()
+          .catch(() => {})
+          .finally(() => lateTimers.delete(timer));
       }, faults.lateApplyMs);
       lateTimers.add(timer);
       return breakConnection();
@@ -532,6 +533,7 @@ export function buildNetwork(opts: NetworkOptions) {
     faults,
     dispatchOnce,
     startDispatcher,
+    lateInFlight: () => lateTimers.size,
     setProcessorUrl: (url: string) => {
       processorUrl = url;
     },

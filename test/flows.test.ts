@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { accountNames } from "../src/chart.ts";
-import { client, holdBalance, ledgerBalance, quiesce, shardedBalance, sleep, startStack, type Stack } from "./helpers.ts";
+import { client, expireAuthDeadline, holdBalance, ledgerBalance, quiesce, shardedBalance, sleep, startStack, type Stack } from "./helpers.ts";
 
 let s: Stack;
 let api: ReturnType<typeof client>;
@@ -81,19 +81,32 @@ describe("authorize", () => {
   });
 
   it("network unreachable past the deadline: reverses, fails, and leaves no hold at the issuer", async () => {
-    s.faults({ dropResponseRate: 1 });
+    s.faults({ dropRequestRate: 1 });
     const card = `tok_low_2000_${randomUUID().slice(0, 8)}`;
     const r = await api.authorize("1500", undefined, card);
     expect(r.status).toBe(202);
-    await sleep(600); // past the 500 ms deadline
-    // Every retransmit now gets a broken connection, so the outcome stays unknown and the deadline path has to run.
-    const deadline = Date.now() + 5000;
-    s.faults({ dropResponseRate: 0, dropRequestRate: 1 });
-    while (Date.now() < deadline) {
-      const { rows } = await s.ctx.pool.query("select step from operations where payment_id = $1", [r.body.paymentId]);
-      if (rows[0].step === "reverse") break;
-      await quiesceOnce();
-    }
+    await expireAuthDeadline(s, r.body.paymentId);
+    await quiesceOnce(); // the next attempt also gets no answer, so it moves to the reversal step
+    const { rows: ops } = await s.ctx.pool.query<{ step: string }>("select step from operations where payment_id = $1", [r.body.paymentId]);
+    expect(ops[0].step).toBe("reverse");
+    s.resetFaults();
+    await quiesce(s);
+    expect((await api.get(r.body.paymentId)).body.status).toBe("failed");
+    // The reversal arrived first, so it left a tombstone. No hold, and the card row was never touched.
+    const { rows } = await s.netPool.query<{ status: string }>("select status from messages where ref = $1", [`auth:${r.body.paymentId}`]);
+    expect(rows[0].status).toBe("tombstoned");
+  });
+
+  it("approved but we never heard, past the deadline: the reversal releases the issuer's hold", async () => {
+    s.faults({ dropResponseRate: 1 }); // applied at the issuer; the response is lost
+    const card = `tok_low_2000_${randomUUID().slice(0, 8)}`;
+    const r = await api.authorize("1500", undefined, card);
+    expect(r.status).toBe(202);
+    const held = await s.netPool.query<{ available: bigint }>("select available from cards where token = $1", [card]);
+    expect(held.rows[0].available).toBe(500n);
+    s.faults({ dropResponseRate: 0, dropRequestRate: 1 }); // the retransmit can't get through either
+    await expireAuthDeadline(s, r.body.paymentId);
+    await quiesceOnce();
     s.resetFaults();
     await quiesce(s);
     expect((await api.get(r.body.paymentId)).body.status).toBe("failed");
@@ -107,18 +120,17 @@ describe("authorize", () => {
     const r = await api.authorize("1500", undefined, card);
     expect(r.status).toBe(202);
     s.faults({ lateApplyRate: 0, dropRequestRate: 1 });
-    const deadline = Date.now() + 1200;
-    while (Date.now() < deadline) {
-      const { rows } = await s.ctx.pool.query("select step from operations where payment_id = $1", [r.body.paymentId]);
-      if (rows[0].step === "reverse") break;
-      await quiesceOnce();
-    }
+    await expireAuthDeadline(s, r.body.paymentId);
+    await quiesceOnce();
     s.resetFaults();
     await quiesce(s);
     expect((await api.get(r.body.paymentId)).body.status).toBe("failed");
-    await sleep(1600); // let the late message land
+    // Wait until the late message has actually been applied, however slowly this machine is running.
+    while (s.net.lateInFlight() > 0) await sleep(50);
     const { rows } = await s.netPool.query<{ status: string }>("select status from messages where ref = $1", [`auth:${r.body.paymentId}`]);
     expect(rows[0].status).toBe("tombstoned");
+    const { rows: holds } = await s.netPool.query("select 1 from cards where token = $1 and available < 2000", [card]);
+    expect(holds).toEqual([]);
   });
 });
 

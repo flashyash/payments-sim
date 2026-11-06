@@ -1,0 +1,39 @@
+{
+  "days": 5,
+  "linesInFiles": 1008,
+  "matched": 960,
+  "injected": 58,
+  "truePositives": 58,
+  "falsePositives": 0,
+  "falseNegatives": 0,
+  "alreadyCoveredByOpenException": 0,
+  "precision": 1,
+  "recall": 1,
+  "shiftsResolvedNextDay": 7,
+  "byKind": {
+    "drop": {
+      "injected": 10,
+      "detected": 10
+    },
+    "shift": {
+      "injected": 10,
+      "detected": 10
+    },
+    "alterAmount": {
+      "injected": 8,
+      "detected": 8
+    },
+    "alterFee": {
+      "injected": 9,
+      "detected": 9
+    },
+    "duplicate": {
+      "injected": 10,
+      "detected": 10
+    },
+    "phantom": {
+      "injected": 11,
+      "detected": 11
+    }
+  }
+}

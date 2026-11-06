@@ -38,9 +38,10 @@ export async function startStack(cfgOver: Partial<ProcessorConfig> = {}, netFaul
     databaseUrl: dbUrl(TEST_DBS.processor),
     ledgerUrl: `http://127.0.0.1:${TEST_LEDGER_PORT}`,
     networkUrl: netUrl,
-    leaseMs: 1000,
-    httpTimeoutMs: 1000,
-    authDeadlineMs: 500,
+    // Generous on purpose: a busy machine must not trip these. Tests that need a deadline to pass move it in the database.
+    leaseMs: 5000,
+    httpTimeoutMs: 3000,
+    authDeadlineMs: 60_000,
     retryBaseMs: 10,
     retryMaxMs: 100,
     webhookRetryBaseMs: 10,
@@ -156,6 +157,11 @@ export async function drain(s: Stack, opts: { timeoutMs?: number } = {}): Promis
 export async function fundMerchant(s: Stack, amount: string): Promise<void> {
   const r = await client(s).call("POST", `/v1/merchants/${s.merchant}/reserve`, { amount });
   if (r.status !== 201) throw new Error(`top-up failed: ${r.status}`);
+}
+
+// Puts an authorization past its deadline without waiting for the clock.
+export async function expireAuthDeadline(s: Stack, paymentId: string): Promise<void> {
+  await s.ctx.pool.query("update operations set deadline_at = now() - interval '1 second', next_attempt_at = now(), lease_until = null where payment_id = $1 and kind = 'authorize'", [paymentId]);
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

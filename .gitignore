@@ -5,3 +5,4 @@ node_modules/
 coverage/
 results/*.log
 results/tmp/
+.vitest/

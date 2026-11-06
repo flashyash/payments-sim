@@ -10,10 +10,11 @@
     "migrate": "node scripts/setup-dbs.ts",
     "typecheck": "tsc",
     "test": "vitest run",
-    "stack": "node scripts/stack.ts",
     "demo": "node scripts/demo.ts",
     "chaos": "node scripts/chaos.ts",
-    "load": "node scripts/load.ts"
+    "load": "node scripts/load.ts",
+    "recon-eval": "node scripts/recon-eval.ts",
+    "start": "node scripts/stack.ts"
   },
   "dependencies": {
     "fastify": "^5.12.7",
@@ -25,5 +26,7 @@
     "typescript": "^7.0.2",
     "vitest": "^5.0.5"
   },
-  "engines": { "node": ">=24" }
+  "engines": {
+    "node": ">=24"
+  }
 }

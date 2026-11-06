@@ -10,7 +10,7 @@ let api: ReturnType<typeof client>;
 let realLedgerUrl: string;
 
 beforeAll(async () => {
-  s = await startStack({ leaseMs: 100 });
+  s = await startStack({ leaseMs: 100, authDeadlineMs: 30_000 }); // lease churn is the point here, not the deadline path
   api = client(s);
   realLedgerUrl = s.ctx.ledger.url;
 });

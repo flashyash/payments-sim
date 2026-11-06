@@ -1,0 +1,536 @@
+{
+  "profile": "full",
+  "durationSeconds": 324,
+  "scenarios": 40,
+  "scenariosWithViolations": 0,
+  "scenariosNotExercised": [],
+  "maxQuiesceMs": 34240,
+  "results": [
+    {
+      "name": "kill@api.admitted",
+      "fired": true,
+      "quiesceMs": 219,
+      "violations": [],
+      "checked": {
+        "payments": 7,
+        "ledgerTransactions": 22,
+        "networkAuths": 7,
+        "webhookEvents": 23,
+        "settlementItems": 10
+      }
+    },
+    {
+      "name": "kill@authorize.network.before",
+      "fired": true,
+      "quiesceMs": 206,
+      "violations": [],
+      "checked": {
+        "payments": 14,
+        "ledgerTransactions": 43,
+        "networkAuths": 14,
+        "webhookEvents": 46,
+        "settlementItems": 20
+      }
+    },
+    {
+      "name": "kill@authorize.network.after",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 21,
+        "ledgerTransactions": 64,
+        "networkAuths": 21,
+        "webhookEvents": 69,
+        "settlementItems": 30
+      }
+    },
+    {
+      "name": "kill@authorize.open_hold.before",
+      "fired": true,
+      "quiesceMs": 210,
+      "violations": [],
+      "checked": {
+        "payments": 28,
+        "ledgerTransactions": 85,
+        "networkAuths": 28,
+        "webhookEvents": 92,
+        "settlementItems": 40
+      }
+    },
+    {
+      "name": "kill@authorize.open_hold.after",
+      "fired": true,
+      "quiesceMs": 215,
+      "violations": [],
+      "checked": {
+        "payments": 35,
+        "ledgerTransactions": 106,
+        "networkAuths": 35,
+        "webhookEvents": 115,
+        "settlementItems": 50
+      }
+    },
+    {
+      "name": "kill@authorize.reverse.after",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 43,
+        "ledgerTransactions": 127,
+        "networkAuths": 43,
+        "webhookEvents": 139,
+        "settlementItems": 60
+      }
+    },
+    {
+      "name": "kill@capture.network.before",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 50,
+        "ledgerTransactions": 148,
+        "networkAuths": 50,
+        "webhookEvents": 162,
+        "settlementItems": 70
+      }
+    },
+    {
+      "name": "kill@capture.network.after",
+      "fired": true,
+      "quiesceMs": 205,
+      "violations": [],
+      "checked": {
+        "payments": 57,
+        "ledgerTransactions": 169,
+        "networkAuths": 57,
+        "webhookEvents": 185,
+        "settlementItems": 80
+      }
+    },
+    {
+      "name": "kill@capture.post.before",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 64,
+        "ledgerTransactions": 190,
+        "networkAuths": 64,
+        "webhookEvents": 208,
+        "settlementItems": 90
+      }
+    },
+    {
+      "name": "kill@capture.post.after",
+      "fired": true,
+      "quiesceMs": 214,
+      "violations": [],
+      "checked": {
+        "payments": 71,
+        "ledgerTransactions": 211,
+        "networkAuths": 71,
+        "webhookEvents": 231,
+        "settlementItems": 100
+      }
+    },
+    {
+      "name": "kill@void.network.after",
+      "fired": true,
+      "quiesceMs": 205,
+      "violations": [],
+      "checked": {
+        "payments": 78,
+        "ledgerTransactions": 232,
+        "networkAuths": 78,
+        "webhookEvents": 254,
+        "settlementItems": 110
+      }
+    },
+    {
+      "name": "kill@void.post.after",
+      "fired": true,
+      "quiesceMs": 205,
+      "violations": [],
+      "checked": {
+        "payments": 85,
+        "ledgerTransactions": 252,
+        "networkAuths": 85,
+        "webhookEvents": 277,
+        "settlementItems": 120
+      }
+    },
+    {
+      "name": "kill@refund.post.before",
+      "fired": true,
+      "quiesceMs": 204,
+      "violations": [],
+      "checked": {
+        "payments": 92,
+        "ledgerTransactions": 273,
+        "networkAuths": 92,
+        "webhookEvents": 300,
+        "settlementItems": 130
+      }
+    },
+    {
+      "name": "kill@refund.post.after",
+      "fired": true,
+      "quiesceMs": 208,
+      "violations": [],
+      "checked": {
+        "payments": 99,
+        "ledgerTransactions": 294,
+        "networkAuths": 99,
+        "webhookEvents": 323,
+        "settlementItems": 140
+      }
+    },
+    {
+      "name": "kill@refund.network.after",
+      "fired": true,
+      "quiesceMs": 206,
+      "violations": [],
+      "checked": {
+        "payments": 106,
+        "ledgerTransactions": 315,
+        "networkAuths": 106,
+        "webhookEvents": 346,
+        "settlementItems": 150
+      }
+    },
+    {
+      "name": "kill@refund.reverse_post.after",
+      "fired": true,
+      "quiesceMs": 106,
+      "violations": [],
+      "checked": {
+        "payments": 113,
+        "ledgerTransactions": 337,
+        "networkAuths": 113,
+        "webhookEvents": 369,
+        "settlementItems": 159
+      }
+    },
+    {
+      "name": "kill@chargeback.post.after",
+      "fired": true,
+      "quiesceMs": 3957,
+      "violations": [],
+      "checked": {
+        "payments": 120,
+        "ledgerTransactions": 358,
+        "networkAuths": 120,
+        "webhookEvents": 392,
+        "settlementItems": 169
+      }
+    },
+    {
+      "name": "kill@settlement.post.after",
+      "fired": true,
+      "quiesceMs": 3737,
+      "violations": [],
+      "checked": {
+        "payments": 127,
+        "ledgerTransactions": 379,
+        "networkAuths": 127,
+        "webhookEvents": 415,
+        "settlementItems": 179
+      }
+    },
+    {
+      "name": "kill@inbox.received",
+      "fired": true,
+      "quiesceMs": 209,
+      "violations": [],
+      "checked": {
+        "payments": 134,
+        "ledgerTransactions": 400,
+        "networkAuths": 134,
+        "webhookEvents": 438,
+        "settlementItems": 189
+      }
+    },
+    {
+      "name": "kill@outbox.send.before",
+      "fired": true,
+      "quiesceMs": 5717,
+      "violations": [],
+      "checked": {
+        "payments": 141,
+        "ledgerTransactions": 421,
+        "networkAuths": 141,
+        "webhookEvents": 461,
+        "settlementItems": 199
+      }
+    },
+    {
+      "name": "kill@outbox.send.after",
+      "fired": true,
+      "quiesceMs": 34240,
+      "violations": [],
+      "checked": {
+        "payments": 148,
+        "ledgerTransactions": 442,
+        "networkAuths": 148,
+        "webhookEvents": 484,
+        "settlementItems": 209
+      }
+    },
+    {
+      "name": "kill@recon.prepared",
+      "fired": true,
+      "quiesceMs": 104,
+      "violations": [],
+      "checked": {
+        "payments": 155,
+        "ledgerTransactions": 463,
+        "networkAuths": 155,
+        "webhookEvents": 507,
+        "settlementItems": 219
+      }
+    },
+    {
+      "name": "lost response: ledger /transactions",
+      "fired": true,
+      "quiesceMs": 218,
+      "violations": [],
+      "checked": {
+        "payments": 7,
+        "ledgerTransactions": 21,
+        "networkAuths": 7,
+        "webhookEvents": 22,
+        "settlementItems": 10
+      }
+    },
+    {
+      "name": "lost request: ledger /transactions",
+      "fired": true,
+      "quiesceMs": 4922,
+      "violations": [],
+      "checked": {
+        "payments": 14,
+        "ledgerTransactions": 41,
+        "networkAuths": 14,
+        "webhookEvents": 44,
+        "settlementItems": 20
+      }
+    },
+    {
+      "name": "lost response: ledger /accounts",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 28,
+        "ledgerTransactions": 80,
+        "networkAuths": 28,
+        "webhookEvents": 87,
+        "settlementItems": 40
+      }
+    },
+    {
+      "name": "lost request: ledger /accounts",
+      "fired": true,
+      "quiesceMs": 310,
+      "violations": [],
+      "checked": {
+        "payments": 35,
+        "ledgerTransactions": 100,
+        "networkAuths": 35,
+        "webhookEvents": 109,
+        "settlementItems": 50
+      }
+    },
+    {
+      "name": "lost response: ledger reverse",
+      "fired": true,
+      "quiesceMs": 206,
+      "violations": [],
+      "checked": {
+        "payments": 56,
+        "ledgerTransactions": 161,
+        "networkAuths": 56,
+        "webhookEvents": 173,
+        "settlementItems": 77
+      }
+    },
+    {
+      "name": "lost request: ledger reverse",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 91,
+        "ledgerTransactions": 262,
+        "networkAuths": 91,
+        "webhookEvents": 279,
+        "settlementItems": 122
+      }
+    },
+    {
+      "name": "lost response: network auth",
+      "fired": true,
+      "quiesceMs": 203,
+      "violations": [],
+      "checked": {
+        "payments": 98,
+        "ledgerTransactions": 273,
+        "networkAuths": 98,
+        "webhookEvents": 295,
+        "settlementItems": 128
+      }
+    },
+    {
+      "name": "lost request: network auth",
+      "fired": true,
+      "quiesceMs": 206,
+      "violations": [],
+      "checked": {
+        "payments": 105,
+        "ledgerTransactions": 280,
+        "networkAuths": 105,
+        "webhookEvents": 307,
+        "settlementItems": 131
+      }
+    },
+    {
+      "name": "lost response: network capture",
+      "fired": true,
+      "quiesceMs": 202,
+      "violations": [],
+      "checked": {
+        "payments": 112,
+        "ledgerTransactions": 300,
+        "networkAuths": 112,
+        "webhookEvents": 329,
+        "settlementItems": 141
+      }
+    },
+    {
+      "name": "lost request: network capture",
+      "fired": true,
+      "quiesceMs": 309,
+      "violations": [],
+      "checked": {
+        "payments": 119,
+        "ledgerTransactions": 320,
+        "networkAuths": 119,
+        "webhookEvents": 351,
+        "settlementItems": 151
+      }
+    },
+    {
+      "name": "lost response: network void",
+      "fired": true,
+      "quiesceMs": 208,
+      "violations": [],
+      "checked": {
+        "payments": 147,
+        "ledgerTransactions": 397,
+        "networkAuths": 147,
+        "webhookEvents": 436,
+        "settlementItems": 191
+      }
+    },
+    {
+      "name": "lost request: network void",
+      "fired": true,
+      "quiesceMs": 207,
+      "violations": [],
+      "checked": {
+        "payments": 154,
+        "ledgerTransactions": 417,
+        "networkAuths": 154,
+        "webhookEvents": 458,
+        "settlementItems": 201
+      }
+    },
+    {
+      "name": "lost response: network refund",
+      "fired": true,
+      "quiesceMs": 311,
+      "violations": [],
+      "checked": {
+        "payments": 161,
+        "ledgerTransactions": 437,
+        "networkAuths": 161,
+        "webhookEvents": 480,
+        "settlementItems": 211
+      }
+    },
+    {
+      "name": "lost request: network refund",
+      "fired": true,
+      "quiesceMs": 313,
+      "violations": [],
+      "checked": {
+        "payments": 210,
+        "ledgerTransactions": 571,
+        "networkAuths": 210,
+        "webhookEvents": 628,
+        "settlementItems": 281
+      }
+    },
+    {
+      "name": "all faults for 90 s",
+      "fired": true,
+      "quiesceMs": 427,
+      "violations": [],
+      "checked": {
+        "payments": 1638,
+        "ledgerTransactions": 3921,
+        "networkAuths": 1638,
+        "webhookEvents": 4526,
+        "settlementItems": 2007,
+        "flows": 234,
+        "kills_ledger": 9,
+        "kills_worker": 9,
+        "kills_network": 11,
+        "kills_api": 6,
+        "kills_sink": 6,
+        "networkRetransmits": 320,
+        "authsTombstoned": 55,
+        "paymentsFailedByTimeout": 119,
+        "opsRetried": 928,
+        "refundsReversed": 11,
+        "refundsRejectedFinal": 0,
+        "notificationsParked": 273,
+        "disputes": 393,
+        "webhookAttempts": 5525,
+        "webhookDuplicates": 504,
+        "settlementFiles": 11,
+        "transientReconExceptions": 54
+      }
+    },
+    {
+      "name": "sabotage unstable_ledger_key caught as postings_exact",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 91
+      }
+    },
+    {
+      "name": "sabotage unstable_network_ref caught as nothing_captured_twice",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 39
+      }
+    },
+    {
+      "name": "sabotage skip_outbox caught as webhooks_delivered",
+      "fired": true,
+      "quiesceMs": null,
+      "violations": [],
+      "checked": {
+        "violationsSeen": 21
+      }
+    }
+  ]
+}

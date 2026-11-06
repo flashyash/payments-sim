@@ -1,0 +1,32 @@
+Console output copied verbatim from `npm run load` (15 s per run, 20 closed-loop clients), final engine code,
+2026-11-05 evening, before the Mac began sleeping at 22:28:29 local (`pmset -g log`). All runs are listed. The last run of
+set B coincided with the first sleep events and is excluded from the README's ranges, with that reason given there.
+These two sets predate the pause detector. results/load-sleep-interrupted.json holds a later set hit by repeated sleep.
+
+--- set A
+16 shards, 20 merchants (run 1): 107 flows/s, 214 req/s, auth p50 91.6 p99 261.9, capture p50 81.8 p99 226, failed 0, commits/flow 43.4, pg cpu 85%, webhook p50 71 p99 170, recon 1618 lines 1228 ms (0 exc), drain 117 ms, violations 0
+16 shards, 20 merchants (run 2): 105 flows/s, 210 req/s, auth p50 91.1 p99 210.7, capture p50 82.5 p99 175.9, failed 0, commits/flow 43.2, pg cpu 84%, webhook p50 73 p99 185, recon 1591 lines 1077 ms (0 exc), drain 115 ms, violations 0
+1 shard (hot accounts), 20 merchants (run 1): 90 flows/s, 179 req/s, auth p50 69.5 p99 219, capture p50 133.3 p99 406.3, failed 0, commits/flow 43.8, pg cpu 78%, webhook p50 50 p99 97, recon 1355 lines 1022 ms (0 exc), drain 114 ms, violations 0
+1 shard (hot accounts), 20 merchants (run 2): 90 flows/s, 180 req/s, auth p50 98.7 p99 352.2, capture p50 90.7 p99 307.6, failed 0, commits/flow 43.4, pg cpu 77%, webhook p50 50 p99 96, recon 1364 lines 983 ms (0 exc), drain 125 ms, violations 0
+16 shards, 1 merchant (hot pending) (run 1): 95 flows/s, 190 req/s, auth p50 89.7 p99 239.4, capture p50 109.1 p99 211.1, failed 0, commits/flow 42.9, pg cpu 84%, webhook p50 68 p99 126, recon 1436 lines 846 ms (0 exc), drain 113 ms, violations 0
+16 shards, 1 merchant (hot pending) (run 2): 115 flows/s, 230 req/s, auth p50 70.9 p99 191.8, capture p50 90.1 p99 201.2, failed 0, commits/flow 43.3, pg cpu 82%, webhook p50 62 p99 126, recon 1736 lines 1168 ms (0 exc), drain 115 ms, violations 0
+16 shards, 20 merchants, network 20–50 ms (run 1): 106 flows/s, 212 req/s, auth p50 93.1 p99 186.5, capture p50 87.3 p99 168.5, failed 0, commits/flow 43, pg cpu 76%, webhook p50 51 p99 117, recon 1608 lines 1266 ms (0 exc), drain 110 ms, violations 0
+16 shards, 20 merchants, network 20–50 ms (run 2): 106 flows/s, 212 req/s, auth p50 91.2 p99 186.5, capture p50 85.6 p99 161.1, failed 0, commits/flow 43.5, pg cpu 81%, webhook p50 53 p99 116, recon 1609 lines 1066 ms (0 exc), drain 112 ms, violations 0
+
+--- set B
+16 shards, 20 merchants (run 1): 120 flows/s, 241 req/s, auth p50 84.7 p99 142.6, capture p50 76.5 p99 118.5, failed 0, commits/flow 43, pg cpu 87%, webhook p50 71 p99 137, recon 1815 lines 1059 ms (0 exc), drain 117 ms, violations 0
+16 shards, 20 merchants (run 2): 121 flows/s, 241 req/s, auth p50 84.6 p99 138.8, capture p50 75.4 p99 114.7, failed 0, commits/flow 43.3, pg cpu 87%, webhook p50 72 p99 131, recon 1820 lines 1096 ms (0 exc), drain 111 ms, violations 0
+1 shard (hot accounts), 20 merchants (run 1): 104 flows/s, 209 req/s, auth p50 63.1 p99 186.6, capture p50 111.9 p99 284.2, failed 0, commits/flow 43.6, pg cpu 75%, webhook p50 47 p99 85, recon 1578 lines 962 ms (0 exc), drain 112 ms, violations 0
+1 shard (hot accounts), 20 merchants (run 2): 106 flows/s, 213 req/s, auth p50 86.9 p99 267.3, capture p50 80.2 p99 253, failed 0, commits/flow 42.9, pg cpu 76%, webhook p50 47 p99 85, recon 1606 lines 959 ms (0 exc), drain 118 ms, violations 0
+16 shards, 1 merchant (hot pending) (run 1): 120 flows/s, 240 req/s, auth p50 68.9 p99 149.6, capture p50 89.2 p99 159.9, failed 0, commits/flow 43, pg cpu 83%, webhook p50 60 p99 111, recon 1814 lines 1010 ms (0 exc), drain 111 ms, violations 0
+16 shards, 1 merchant (hot pending) (run 2): 122 flows/s, 244 req/s, auth p50 69.6 p99 156.7, capture p50 85.1 p99 155.4, failed 0, commits/flow 43.1, pg cpu 84%, webhook p50 61 p99 113, recon 1838 lines 1103 ms (0 exc), drain 111 ms, violations 0
+16 shards, 20 merchants, network 20–50 ms (run 1): 114 flows/s, 228 req/s, auth p50 88.7 p99 158, capture p50 82.7 p99 128.5, failed 0, commits/flow 43.4, pg cpu 78%, webhook p50 50 p99 99, recon 1722 lines 1060 ms (0 exc), drain 111 ms, violations 0
+16 shards, 20 merchants, network 20–50 ms (run 2): 10 flows/s, 21 req/s, auth p50 101.5 p99 66883.4, capture p50 92.1 p99 66898.8, failed 13, commits/flow 45.9, pg cpu 69%, webhook p50 56 p99 222, recon 777 lines 660 ms (0 exc), drain 216 ms, violations 0   <- machine slept during this run; excluded
+
+--- concurrency sweep (16 shards, 20 merchants, 12 s, one run each)
+concurrency 1: 24 flows/s, 49 req/s, auth p50 20.4 p99 44.3, capture p50 18.1 p99 35.7, failed 0
+concurrency 5: 92 flows/s, 185 req/s, auth p50 27.6 p99 51.3, capture p50 24.4 p99 45.2, failed 0
+concurrency 50: 120 flows/s, 239 req/s, auth p50 214.9 p99 435.2, capture p50 191 p99 272.5, failed 0
+
+--- diagnostic: synchronous_commit=off (restored afterwards), 16 shards, 20 merchants, 20 s
+111 flows/s, 222 req/s, auth p50 88.2 p99 180.5, capture p50 81.2 p99 159.7, failed 0

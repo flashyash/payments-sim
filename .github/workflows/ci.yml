@@ -15,7 +15,7 @@ jobs:
           POSTGRES_DB: postgres
         ports: ["5434:5432"]
         options: >-
-          --health-cmd "pg_isready -U payments"
+          --health-cmd "pg_isready -U payments -d postgres"
           --health-interval 1s --health-timeout 3s --health-retries 30
     steps:
       - uses: actions/checkout@v4

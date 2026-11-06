@@ -152,6 +152,9 @@ within the harness timeout (60 s), and every webhook must be delivered by then.
 | Settlement posts matched lines only; exceptions stay open | Never move a merchant's money on a line we couldn't verify | All-or-nothing per file: one bad line would block every merchant |
 | Dropped-response faults via an HTTP proxy, crashes via SIGKILL failpoints | Same code runs in prod and chaos; proxies test the real client | Mocks: wouldn't test real socket behaviour |
 | Compose runs Postgres only; services run on the host | The harness has to SIGKILL and restart them quickly; containers would slow every kill and add nothing | Containerizing each service |
+| A reversed auth answers 402, not 504 | The outcome is final, and clients treat any 5xx as safe to retry. Found by the harness: its client retried forever | 504: looks natural, breaks every retry loop |
+| Settlement cutoff taken from the network database's clock | `applied_at` comes from that clock; the app's clock put just-applied captures outside their own file | App clock |
+| Chaos checks read all four databases directly; services never do | An oracle sharing the services' view would share their blind spots | Checking through the APIs |
 | Merchant secrets stored plaintext, generated per merchant | Simulator with fake merchants, nothing real to protect. Production would use a KMS | — |
 
 ## Proposed ledger changes (none made)
@@ -171,13 +174,18 @@ payments-sim works against the ledger as it stands at `a704449`. These would eac
 - A chargeback can exceed the remaining refundable amount (refund then dispute = double payment). It's accepted as a fact; a real system would alert.
 - Hold accounts grow forever (one ledger account per auth).
 
+- Reconciliation runs when called (`POST /admin/reconcile/:fileId`), once per simulated day. There's no scheduler.
+- The refund race in question 2, row 3 is narrowed, not closed. It needs proposed ledger change 1.
+- The 90 s chaos storm didn't produce a refund rejected for funds; that path is covered by tests only.
+- The load test's throughput limit (about 120 flows/s) isn't identified. Commit fsync is ruled out.
+
 ## Done means
 | Target | Measure |
 |---|---|
 | Invariants hold under chaos | `npm run chaos`: a crash at every failpoint, process kills and dropped responses, zero violations |
 | The checker can actually catch bugs | Sabotage run with idempotency broken must report violations |
 | Concurrency and failure paths tested | `npm test`: races, replays, every illegal transition, fault paths |
-| Measured latency and throughput | `npm run load`: p50/p99 and throughput in the README, never estimated |
+| Measured latency and throughput | `npm run load`: p50/p99 and throughput in the README, never estimated. A clean rerun with the pause detector is still open |
 | Reconciliation finds what was injected | Every injected mismatch detected, no false positives |
 
 ## Milestones
@@ -187,4 +195,4 @@ payments-sim works against the ledger as it stands at `a704449`. These would eac
 - [x] M4 Transactional outbox, signed webhooks (plumbing + core)
 - [x] M5 Settlement + reconciliation with injected mismatches (core)
 - [x] M6 Chaos harness + invariant checker + sabotage control
-- [ ] M7 Load test, README numbers, SKILLS row, bullets
+- [x] M7 Load test, README numbers, SKILLS row, bullets

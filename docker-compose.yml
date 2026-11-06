@@ -11,7 +11,7 @@ services:
     ports:
       - "5434:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U payments"]
+      test: ["CMD-SHELL", "pg_isready -U payments -d postgres"]
       interval: 1s
       timeout: 3s
       retries: 30

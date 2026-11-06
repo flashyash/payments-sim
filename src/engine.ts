@@ -688,14 +688,17 @@ export async function drive(ctx: Ctx, opId: string): Promise<DriveResult> {
   const lease = await claim(ctx, opId);
   if (!lease) return "busy";
   try {
-    for (;;) {
+    for (let first = true; ; first = false) {
       const op = await loadOp(ctx, opId);
       if (op.state !== "in_progress") return "finished";
-      const renewed = await ctx.pool.query(
-        `update operations set lease_until = now() + ($3 || ' milliseconds')::interval where id = $1 and lease_token = $2`,
-        [opId, lease.token.toString(), String(ctx.cfg.leaseMs)],
-      );
-      if (!renewed.rowCount) return "busy";
+      // Claiming just set the lease, so only later steps renew it. Each renewal is a commit, and commits are the bottleneck.
+      if (!first) {
+        const renewed = await ctx.pool.query(
+          `update operations set lease_until = now() + ($3 || ' milliseconds')::interval where id = $1 and lease_token = $2`,
+          [opId, lease.token.toString(), String(ctx.cfg.leaseMs)],
+        );
+        if (!renewed.rowCount) return "busy";
+      }
       const step = FLOWS[op.kind]?.[op.step];
       if (!step) throw new Error(`no step ${op.kind}.${op.step}`);
       await step(ctx, op, lease);
