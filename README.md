@@ -114,16 +114,27 @@ The client scaling table below is from an earlier set of runs, before the query 
 
 What these show:
 - A full flow (authorize + capture) costs about **41 database commits** across the four databases, webhooks included.
-- Throughput tops out around **90–140 flows/s** (about 180–280 requests/s). The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
+- In the two-run table above, throughput tops out around **90–140 flows/s** (about 180–280 requests/s). On a quieter host, in the old-vs-new comparison below, current code reached 130–174 flows/s. The ledger alone did about 1,960 posts/s in its own load test, so the ledger isn't the limit.
 - Sharding helped less than expected in throughput, but with 1 shard capture p99 was roughly 2× worse.
 - **The ceiling at this setup is the laptop's Docker path, not the payment code.** Each limit below only showed up after removing the one above it (single 15 s runs, 20 clients; raw files in [results/profiling](results/profiling)):
   1. **Docker VM CPU, at 2 vCPUs.** The VM was 3–4% idle. Postgres used about 100 of its 200%, while sshd, docker-proxy and softirq together used about 110. Close to half the VM goes on moving bytes. A flow makes about 114 client round trips, and each statement took about 1.7 ms from the client against about 0.11 ms of Postgres execution.
   2. **The SSH port-forward, with more vCPUs.** 2 vCPUs: 101–118 flows/s. 4: 156–171. 8: 166–175, with the VM 45% idle. Inside the 8-vCPU VM with no forward: 437–515 flows/s, though webhook delivery backed up (p50 1.5–2.8 s).
   3. **Durable commit on native Postgres, with no VM at all.** `F_FULLFSYNC`: 152 flows/s, about 3.1 ms per WAL flush. Plain macOS fsync, which doesn't flush the drive cache and so isn't a durable result: 421 flows/s, with the API event loop saturated.
 - **What it isn't:** Node services at the 2-vCPU setting (API event-loop use about 0.45), connection-pool waits (0.02 ms), or commit fsync at that setting (`synchronous_commit=off` gave no gain).
-- **Fewer round trips, gain not settled.** Prepared statements, single fenced statements for step updates, and less frequent lease renewal cut commits from about 43 to about 41 per flow, with no durability change. An interleaved A/B (6 runs per side) showed about +28% (mean 102 to 130 flows/s), or +19% with network latency, but the separate full load runs above show no clear gain. Treat it as somewhere between 0 and 28%.
+- **Less database work per flow: about 16–28% more throughput on this setup.** Prepared statements, single fenced statements for step updates, and less frequent lease renewal cut commits from about 43 to about 41 per flow, with no durability change. The measurements are in the old-vs-new table below.
 
 Also: webhook delivery p50 47–78 ms, p99 87–164 ms under that load. Reconciliation plus settlement took about 1.1 s for 1,800 lines.
+
+**Old vs new** (cd5305a against f9c1d45): 12 alternating rounds per side, with the same `load.ts` on both sides, the settings above, and 2 vCPUs with the SSH forward on an otherwise quiet laptop on AC power. The exclusion rules and decision rule were written before the first run, in [PROTOCOL.md](results/load-ab-2026-11-06/PROTOCOL.md). 2 of 96 runs were excluded, both on the old side for a busy host. There were 0 failed flows and 0 invariant violations.
+
+| Scenario | Old flows/s, mean (range) | New flows/s, mean (range) | Change | 95% bootstrap CI |
+|---|---|---|---|---|
+| 16 shards, 20 merchants | 131.4 (121–138) | 168.4 (160–174) | +27.9% | +24.0% to +31.8% |
+| 1 shard (hot accounts), 20 merchants | 116.0 (110–119) | 134.8 (130–138) | +16.1% | +13.9% to +18.6% |
+| 16 shards, 1 merchant | 132.2 (128–136) | 159.8 (150–166) | +20.8% | +18.6% to +23.2% |
+| 16 shards, 20 merchants, network 20–50 ms | 122.2 (117–125) | 142.5 (137–146) | +16.6% | +14.6% to +18.6% |
+
+Change and CI use rounds where both sides' runs survived exclusion (11 or 12 per scenario). The mean of the four changes is +20.1% (95% CI +18.2% to +21.8%). Every interval stays above zero with nothing excluded, in the first and last six rounds, and in rounds 1–9. This replaces the earlier "between 0 and 28%" estimate: the separate full load runs that showed no clear gain had two runs per scenario, weren't interleaved, and used different load scripts on each side. Which of them was off, and why, wasn't established. The comparison covers the commit as a whole, which also removed sabotage checks from `src/`, so it doesn't separate the effect of each query change. These numbers compare two commits on one laptop and aren't a capacity claim. Raw results, scripts and analysis: [results/load-ab-2026-11-06](results/load-ab-2026-11-06).
 
 **Reconciliation** (`npm run recon-eval`, [results/recon-eval.json](results/recon-eval.json)): over 5 simulated days and 1,005 file lines, 60 injected mismatches of 6 kinds, 60 detected,
 0 false positives. Ground truth comes from the injector's manifest, which the matcher can't see. An earlier run scored one apparent miss, which was the same line being

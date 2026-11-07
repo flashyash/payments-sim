@@ -1,0 +1,27 @@
+2026-11-06T18:06:14 round 1 old: exit 0, 4 scenarios, 78.4 s, pre-idle 85.55, ac True/True
+2026-11-06T18:07:57 round 1 new: exit 0, 4 scenarios, 79.4 s, pre-idle 93.65, ac True/True
+2026-11-06T18:09:40 round 2 new: exit 0, 4 scenarios, 79.2 s, pre-idle 96.1, ac True/True
+2026-11-06T18:11:23 round 2 old: exit 0, 4 scenarios, 78.5 s, pre-idle 91.93, ac True/True
+2026-11-06T18:13:06 round 3 old: exit 0, 4 scenarios, 78.9 s, pre-idle 95.74, ac True/True
+2026-11-06T18:14:49 round 3 new: exit 0, 4 scenarios, 79.6 s, pre-idle 94.88, ac True/True
+2026-11-06T18:16:33 round 4 new: exit 0, 4 scenarios, 79.3 s, pre-idle 94.71, ac True/True
+2026-11-06T18:18:15 round 4 old: exit 0, 4 scenarios, 78.3 s, pre-idle 94.7, ac True/True
+2026-11-06T18:19:58 round 5 old: exit 0, 4 scenarios, 78.6 s, pre-idle 95.44, ac True/True
+2026-11-06T18:21:41 round 5 new: exit 0, 4 scenarios, 79.1 s, pre-idle 96.7, ac True/True
+2026-11-06T18:23:24 round 6 new: exit 0, 4 scenarios, 79.4 s, pre-idle 93.75, ac True/True
+2026-11-06T18:25:07 round 6 old: exit 0, 4 scenarios, 78.5 s, pre-idle 95.74, ac True/True
+2026-11-06T18:26:49 round 7 old: exit 0, 4 scenarios, 78.1 s, pre-idle 96.24, ac True/True
+2026-11-06T18:28:32 round 7 new: exit 0, 4 scenarios, 79.3 s, pre-idle 96.57, ac True/True
+2026-11-06T18:30:15 round 8 new: exit 0, 4 scenarios, 79.1 s, pre-idle 95.36, ac True/True
+2026-11-06T18:31:58 round 8 old: exit 0, 4 scenarios, 78.2 s, pre-idle 93.45, ac True/True
+2026-11-06T18:33:40 round 9 old: exit 0, 4 scenarios, 78.4 s, pre-idle 95.63, ac True/True
+2026-11-06T18:35:24 round 9 new: exit 0, 4 scenarios, 79.3 s, pre-idle 95.2, ac True/True
+2026-11-06T18:37:08 round 10 new: exit 0, 4 scenarios, 79.9 s, pre-idle 96.12, ac True/True
+2026-11-06T18:38:50 round 10 old: exit 0, 4 scenarios, 78.1 s, pre-idle 92.2, ac True/True
+2026-11-06T18:39:14 round 11 old: host idle 74.61, waiting
+2026-11-06T18:40:51 round 11 old: exit 0, 4 scenarios, 78.4 s, pre-idle 83.21, ac True/True
+2026-11-06T18:42:35 round 11 new: exit 0, 4 scenarios, 79.5 s, pre-idle 95.5, ac True/True
+2026-11-06T18:44:18 round 12 new: exit 0, 4 scenarios, 79.5 s, pre-idle 96.33, ac True/True
+2026-11-06T18:44:42 round 12 old: host idle 74.78, waiting
+2026-11-06T18:46:19 round 12 old: exit 0, 4 scenarios, 78.2 s, pre-idle 80.5, ac True/True
+2026-11-06T18:46:39 done

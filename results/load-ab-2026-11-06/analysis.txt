@@ -1,0 +1,42 @@
+excluded: round 1 old 16 shards, 20 merchants: host busy during
+excluded: round 10 old 1 shard (hot accounts), 20 merchants: host busy during
+
+blocks 24; scenario runs {'new': 48, 'old': 48}; excluded {'old': 2}; by rule {('old', 'host busy during'): 2}; invariant violations 0
+
+scenario                                     old mean (range) n       new mean (range) n       pairs  effect   95% CI
+16 shards, 20 merchants                      131.4 (121-138) 11       168.4 (160-174) 12          11  +27.9%  [+24.0%, +31.8%]
+1 shard (hot accounts), 20 merchants         116.0 (110-119) 11       134.8 (130-138) 12          11  +16.1%  [+13.9%, +18.6%]
+16 shards, 1 merchant (hot pending)          132.2 (128-136) 12       159.8 (150-166) 12          12  +20.8%  [+18.6%, +23.2%]
+16 shards, 20 merchants, network 20–50 ms    122.2 (117-125) 12       142.5 (137-146) 12          12  +16.6%  [+14.6%, +18.6%]
+
+across scenarios (mean of the four effects, 10 rounds valid in all four): +20.1% [+18.2%, +21.8%]
+
+verdict: HOLDS: every scenario CI is above zero
+
+context, medians per side:
+  old: commits/flow 43.1, flow p50 156.6 ms, flow p99 255.9 ms, host idle 65.38%, vm idle 5.8%, pg cpu 83%
+  new: commits/flow 41, flow p50 131.7 ms, flow p99 231 ms, host idle 65.58%, vm idle 9.2%, pg cpu 73%
+  order check, mean effect by which side ran first: {'new first': '+22.2%', 'old first': '+18.6%'}
+
+--- sensitivity (not part of the decision rule) ---
+all 12 rounds, nothing excluded
+  16 shards, 20 merchants                      n=12 +29.7% [+25.1%, +35.1%]
+  1 shard (hot accounts), 20 merchants         n=12 +18.3% [+14.6%, +23.6%]
+  16 shards, 1 merchant (hot pending)          n=12 +20.8% [+18.6%, +23.2%]
+  16 shards, 20 merchants, network 20–50 ms    n=12 +16.6% [+14.6%, +18.6%]
+rounds 1-9, with the protocol's exclusions
+  16 shards, 20 merchants                      n= 8 +28.4% [+23.8%, +33.3%]
+  1 shard (hot accounts), 20 merchants         n= 9 +16.1% [+13.5%, +19.1%]
+  16 shards, 1 merchant (hot pending)          n= 9 +20.1% [+17.6%, +23.1%]
+  16 shards, 20 merchants, network 20–50 ms    n= 9 +17.0% [+14.4%, +19.5%]
+rounds 1-6, with the protocol's exclusions
+  16 shards, 20 merchants                      n= 5 +27.5% [+20.8%, +35.5%]
+  1 shard (hot accounts), 20 merchants         n= 6 +15.5% [+12.7%, +18.7%]
+  16 shards, 1 merchant (hot pending)          n= 6 +18.2% [+16.1%, +20.3%]
+  16 shards, 20 merchants, network 20–50 ms    n= 6 +17.4% [+14.2%, +20.2%]
+rounds 7-12, with the protocol's exclusions
+  16 shards, 20 merchants                      n= 6 +28.2% [+24.1%, +31.4%]
+  1 shard (hot accounts), 20 merchants         n= 5 +16.9% [+13.7%, +21.0%]
+  16 shards, 1 merchant (hot pending)          n= 6 +23.4% [+20.7%, +26.4%]
+  16 shards, 20 merchants, network 20–50 ms    n= 6 +15.8% [+13.8%, +18.4%]
+host 1-min load average before each run: 3.1 to 10.7

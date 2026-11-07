@@ -1,0 +1,251 @@
+{
+ "round": 5,
+ "side": "old",
+ "position": 1,
+ "commit": "cd5305a2e894d3ab625712ff39583d76d315f795",
+ "loadScriptSha256": "3d8b10edf2ac437bcea27566f66500de86dea1616b1c3a0ad92601692bdfa1b7",
+ "startedAt": "2026-11-06T23:18:39.642402+00:00",
+ "wallSeconds": 78.6,
+ "preIdlePercent": 95.44,
+ "idleWaitSeconds": 0,
+ "acAtStart": true,
+ "acAtEnd": true,
+ "exitCode": 0,
+ "stderr": "",
+ "stdout": "16 shards, 20 merchants (run 1): 137 flows/s, 274 req/s, auth p50 73.5 p99 134.5, capture p50 67.4 p99 121.7, flow p50 142.1 p99 217.4, failed 0, commits/flow 43, pg cpu 87%, webhook p50 68 p99 124, recon 2066 lines 1214 ms (0 exc), drain 114 ms, violations 0, vm idle 1.3%, host idle 65.2%, host load 4.4\u21924.7, max ckpt sync 0.022 s, max pause 3 ms, valid true\n1 shard (hot accounts), 20 merchants (run 1): 115 flows/s, 230 req/s, auth p50 54.6 p99 153.9, capture p50 105.4 p99 275.2, flow p50 164 p99 365.2, failed 0, commits/flow 43.5, pg cpu 79%, webhook p50 46 p99 87, recon 1733 lines 1027 ms (0 exc), drain 114 ms, violations 0, vm idle 6.9%, host idle 64.24%, host load 4.7\u21924.8, max ckpt sync 0.032 s, max pause 3 ms, valid true\n16 shards, 1 merchant (hot pending) (run 1): 132 flows/s, 265 req/s, auth p50 60.9 p99 139.1, capture p50 81.8 p99 160.8, flow p50 146 p99 255.7, failed 0, commits/flow 42.8, pg cpu 83%, webhook p50 59 p99 107, recon 1998 lines 1111 ms (0 exc), drain 9 ms, violations 0, vm idle 2.3%, host idle 65.11%, host load 4.8\u21925.1, max ckpt sync 0.039 s, max pause 2 ms, valid true\n16 shards, 20 merchants, network 20\u201350 ms (run 1): 124 flows/s, 248 req/s, auth p50 81.1 p99 127, capture p50 76.7 p99 120.9, flow p50 158.4 p99 230.5, failed 0, commits/flow 43, pg cpu 81%, webhook p50 48 p99 91, recon 1878 lines 1208 ms (0 exc), drain 112 ms, violations 0, vm idle 5.8%, host idle 67.5%, host load 5.1\u21924.7, max ckpt sync 0.037 s, max pause 4 ms, valid true\n",
+ "load": {
+  "seconds": 15,
+  "runs": 1,
+  "concurrency": 20,
+  "out": [
+   {
+    "run": 1,
+    "scenario": "16 shards, 20 merchants",
+    "concurrency": 20,
+    "seconds": 15.1,
+    "flows": 2066,
+    "flowsPerSec": 137,
+    "requestsPerSec": 274,
+    "failed": 0,
+    "commitsPerFlow": 43,
+    "vmIdlePercent": 1.3,
+    "hostIdlePercent": 65.2,
+    "postgresCpuPercent": 87,
+    "processCpuPercent": {
+     "sink": 4,
+     "network": 10,
+     "ledger": 12,
+     "api": 39,
+     "worker": 6
+    },
+    "authorizeMs": {
+     "n": 2066,
+     "p50": 73.5,
+     "p99": 134.5
+    },
+    "captureMs": {
+     "n": 2066,
+     "p50": 67.4,
+     "p99": 121.7
+    },
+    "flowMs": {
+     "n": 2066,
+     "p50": 142.1,
+     "p99": 217.4
+    },
+    "webhookDeliveryMs": {
+     "n": 4132,
+     "p50": 68,
+     "p99": 124
+    },
+    "backlogDrainMs": 114,
+    "recon": {
+     "lines": 2066,
+     "matched": 2066,
+     "exceptions": 0,
+     "ms": 1214
+    },
+    "maxPauseMs": 3,
+    "valid": true,
+    "hostLoadAverage": {
+     "before": 4.4,
+     "after": 4.7
+    },
+    "maxCheckpointSyncSeconds": 0.022,
+    "violations": 0,
+    "violationExamples": []
+   },
+   {
+    "run": 1,
+    "scenario": "1 shard (hot accounts), 20 merchants",
+    "concurrency": 20,
+    "seconds": 15.1,
+    "flows": 1733,
+    "flowsPerSec": 115,
+    "requestsPerSec": 230,
+    "failed": 0,
+    "commitsPerFlow": 43.5,
+    "vmIdlePercent": 6.9,
+    "hostIdlePercent": 64.24,
+    "postgresCpuPercent": 79,
+    "processCpuPercent": {
+     "network": 9,
+     "ledger": 11,
+     "sink": 3,
+     "api": 32,
+     "worker": 7
+    },
+    "authorizeMs": {
+     "n": 1733,
+     "p50": 54.6,
+     "p99": 153.9
+    },
+    "captureMs": {
+     "n": 1733,
+     "p50": 105.4,
+     "p99": 275.2
+    },
+    "flowMs": {
+     "n": 1733,
+     "p50": 164,
+     "p99": 365.2
+    },
+    "webhookDeliveryMs": {
+     "n": 3466,
+     "p50": 46,
+     "p99": 87
+    },
+    "backlogDrainMs": 114,
+    "recon": {
+     "lines": 1733,
+     "matched": 1733,
+     "exceptions": 0,
+     "ms": 1027
+    },
+    "maxPauseMs": 3,
+    "valid": true,
+    "hostLoadAverage": {
+     "before": 4.7,
+     "after": 4.8
+    },
+    "maxCheckpointSyncSeconds": 0.032,
+    "violations": 0,
+    "violationExamples": []
+   },
+   {
+    "run": 1,
+    "scenario": "16 shards, 1 merchant (hot pending)",
+    "concurrency": 20,
+    "seconds": 15.1,
+    "flows": 1998,
+    "flowsPerSec": 132,
+    "requestsPerSec": 265,
+    "failed": 0,
+    "commitsPerFlow": 42.8,
+    "vmIdlePercent": 2.3,
+    "hostIdlePercent": 65.11,
+    "postgresCpuPercent": 83,
+    "processCpuPercent": {
+     "sink": 4,
+     "network": 10,
+     "ledger": 13,
+     "api": 37,
+     "worker": 8
+    },
+    "authorizeMs": {
+     "n": 1998,
+     "p50": 60.9,
+     "p99": 139.1
+    },
+    "captureMs": {
+     "n": 1998,
+     "p50": 81.8,
+     "p99": 160.8
+    },
+    "flowMs": {
+     "n": 1998,
+     "p50": 146,
+     "p99": 255.7
+    },
+    "webhookDeliveryMs": {
+     "n": 3996,
+     "p50": 59,
+     "p99": 107
+    },
+    "backlogDrainMs": 9,
+    "recon": {
+     "lines": 1998,
+     "matched": 1998,
+     "exceptions": 0,
+     "ms": 1111
+    },
+    "maxPauseMs": 2,
+    "valid": true,
+    "hostLoadAverage": {
+     "before": 4.8,
+     "after": 5.1
+    },
+    "maxCheckpointSyncSeconds": 0.039,
+    "violations": 0,
+    "violationExamples": []
+   },
+   {
+    "run": 1,
+    "scenario": "16 shards, 20 merchants, network 20\u201350 ms",
+    "concurrency": 20,
+    "seconds": 15.1,
+    "flows": 1878,
+    "flowsPerSec": 124,
+    "requestsPerSec": 248,
+    "failed": 0,
+    "commitsPerFlow": 43,
+    "vmIdlePercent": 5.8,
+    "hostIdlePercent": 67.5,
+    "postgresCpuPercent": 81,
+    "processCpuPercent": {
+     "sink": 3,
+     "network": 8,
+     "ledger": 11,
+     "api": 33,
+     "worker": 6
+    },
+    "authorizeMs": {
+     "n": 1878,
+     "p50": 81.1,
+     "p99": 127
+    },
+    "captureMs": {
+     "n": 1878,
+     "p50": 76.7,
+     "p99": 120.9
+    },
+    "flowMs": {
+     "n": 1878,
+     "p50": 158.4,
+     "p99": 230.5
+    },
+    "webhookDeliveryMs": {
+     "n": 3756,
+     "p50": 48,
+     "p99": 91
+    },
+    "backlogDrainMs": 112,
+    "recon": {
+     "lines": 1878,
+     "matched": 1878,
+     "exceptions": 0,
+     "ms": 1208
+    },
+    "maxPauseMs": 4,
+    "valid": true,
+    "hostLoadAverage": {
+     "before": 5.1,
+     "after": 4.7
+    },
+    "maxCheckpointSyncSeconds": 0.037,
+    "violations": 0,
+    "violationExamples": []
+   }
+  ]
+ }
+}
